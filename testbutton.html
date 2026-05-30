@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asymmetrical Morphing Button</title>
+    <style>
+        /* Centering the button on the page for presentation */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #0c0d0e; /* Deep dark background */
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* The core button styles */
+        .custom-btn {
+            padding: 18px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0c0d0e; /* High-contrast dark text */
+            background-color: #C8FF00; /* Vibrant lime accent */
+            border: none;
+            cursor: pointer;
+            outline: none;
+            box-shadow: none;
+            
+            /* Starting shape: Sharp, pointy corners on all sides */
+            border-radius: 5px; 
+            
+            /* 
+               FAST UNHOVER: This transition triggers when leaving the hover state.
+               It snaps back to pointy in 0.3 seconds.
+            */
+            transition: 
+                border-radius 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                filter 0.2s ease;
+        }
+
+        /* Hover state */
+        .custom-btn:hover {
+            border-radius: 100px; /* High value guarantees a clean pill shape */
+            filter: brightness(1.05); /* Clean lighting change */
+            
+            /* 
+               SLOW HOVER: This overrides the base transition ONLY while hovering.
+               It makes the entry animation take a slow, smooth 1.2 seconds.
+            */
+            transition: 
+                border-radius 1.2s cubic-bezier(0.25, 1, 0.5, 1),
+                filter 0.4s ease;
+        }
+
+        /* Active state: Click feedback without moving the button layout */
+        .custom-btn:active {
+            filter: brightness(0.95); 
+        }
+    </style>
+</head>
+<body>
+
+    <button id="animated-btn" class="custom-btn">Hover Me</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const button = document.getElementById('animated-btn');
+
+            button.addEventListener('click', () => {
+                console.log('Button clicked!');
+            });
+        });
+    </script>
+</body>
+</html>

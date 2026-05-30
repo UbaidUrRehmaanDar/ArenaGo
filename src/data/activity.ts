@@ -1,0 +1,26 @@
+import type { ActivityItem } from '../types'
+
+export const activityFeed: ActivityItem[] = [
+  { id: 'act-1',  playerName: 'Ahmed Khan',     action: 'booked',    arenaName: 'DHA Sports Complex',          sport: 'Football',   time: '2 min ago' },
+  { id: 'act-2',  playerName: 'Sara Malik',      action: 'reviewed',  arenaName: 'Gulberg Padel Club',           sport: 'Padel',      time: '5 min ago' },
+  { id: 'act-3',  playerName: 'Usman Ali',       action: 'booked',    arenaName: 'Johar Town Badminton Hall',    sport: 'Badminton',  time: '8 min ago' },
+  { id: 'act-4',  playerName: 'Hamza Siddiqui',  action: 'booked',    arenaName: 'Model Town Cricket Nets',      sport: 'Cricket',    time: '12 min ago' },
+  { id: 'act-5',  playerName: 'Nadia Hassan',    action: 'reviewed',  arenaName: 'DHA Tennis Club',              sport: 'Tennis',     time: '15 min ago' },
+  { id: 'act-6',  playerName: 'Bilal Hussain',   action: 'booked',    arenaName: 'DHA Sports Complex',          sport: 'Football',   time: '18 min ago' },
+  { id: 'act-7',  playerName: 'Zainab Ahmed',    action: 'booked',    arenaName: 'Gulberg Basketball Courts',    sport: 'Basketball', time: '22 min ago' },
+  { id: 'act-8',  playerName: 'Danish Rauf',     action: 'cancelled', arenaName: 'Johar Town Badminton Hall',    sport: 'Badminton',  time: '25 min ago' },
+  { id: 'act-9',  playerName: 'Faisal Iqbal',    action: 'booked',    arenaName: 'Gulberg Padel Club',           sport: 'Padel',      time: '28 min ago' },
+  { id: 'act-10', playerName: 'Imran Qureshi',   action: 'booked',    arenaName: 'Johar Town Badminton Hall',    sport: 'Badminton',  time: '32 min ago' },
+  { id: 'act-11', playerName: 'Omar Farooq',     action: 'reviewed',  arenaName: 'Model Town Cricket Nets',      sport: 'Cricket',    time: '35 min ago' },
+  { id: 'act-12', playerName: 'Rashid Mehmood',  action: 'booked',    arenaName: 'Johar Town Futsal Arena',      sport: 'Football',   time: '38 min ago' },
+  { id: 'act-13', playerName: 'Ayesha Tariq',    action: 'booked',    arenaName: 'Johar Town Badminton Hall',    sport: 'Badminton',  time: '42 min ago' },
+  { id: 'act-14', playerName: 'Kamran Shah',     action: 'reviewed',  arenaName: 'DHA Tennis Club',              sport: 'Tennis',     time: '45 min ago' },
+  { id: 'act-15', playerName: 'Tariq Jamil',     action: 'booked',    arenaName: 'Bahria Town Cricket Academy',  sport: 'Cricket',    time: '48 min ago' },
+  { id: 'act-16', playerName: 'Hassan Raza',     action: 'booked',    arenaName: 'DHA Sports Complex',          sport: 'Football',   time: '52 min ago' },
+  { id: 'act-17', playerName: 'Mariam Noor',     action: 'booked',    arenaName: 'Gulberg Padel Club',           sport: 'Padel',      time: '55 min ago' },
+  { id: 'act-18', playerName: 'Waqas Butt',      action: 'reviewed',  arenaName: 'DHA Sports Complex',          sport: 'Football',   time: '58 min ago' },
+  { id: 'act-19', playerName: 'Ali Raza',        action: 'booked',    arenaName: 'Gulberg Basketball Courts',    sport: 'Basketball', time: '1 hr ago' },
+  { id: 'act-20', playerName: 'Fatima Zehra',    action: 'booked',    arenaName: 'DHA Tennis Club',              sport: 'Tennis',     time: '1 hr ago' },
+  { id: 'act-21', playerName: 'Saad Mahmood',    action: 'cancelled', arenaName: 'Johar Town Futsal Arena',      sport: 'Football',   time: '1 hr ago' },
+  { id: 'act-22', playerName: 'Hina Akram',      action: 'booked',    arenaName: 'Model Town Cricket Nets',      sport: 'Cricket',    time: '2 hr ago' },
+]

@@ -1,0 +1,258 @@
+import type { Arena } from '../types'
+
+// All Unsplash IDs verified working as of project build
+// Football/turf:   1574629810360-7efbbe195018  1459865264687-595d652de67e
+// Badminton/indoor:1554068865-24cecd4e34b8     1595435934249-5df7ed86e1c0  1612872087720-bb876e2e67d1
+// Basketball:      1546519638-68e109498ffc
+// Tennis:          1554068865-24cecd4e34b8     1595435934249-5df7ed86e1c0
+
+export const arenas: Arena[] = [
+  {
+    id: 'arena-1',
+    name: 'DHA Sports Complex',
+    slug: 'dha-sports-complex',
+    sport: 'Football',
+    location: {
+      city: 'Lahore',
+      area: 'DHA Phase 5',
+      address: 'Block L, DHA Phase 5, Lahore',
+      coordinates: { lat: 31.4697, lng: 74.4126 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&q=80',
+      'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
+      'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',
+    ],
+    pricing: { weekday: 2500, weekend: 3200, peak: 3500 },
+    rating: 4.8,
+    reviewCount: 132,
+    totalBookings: 1847,
+    occupancyRate: 87,
+    amenities: ['Changing Rooms', 'Parking', 'Floodlights', 'CCTV', 'Water Cooler', 'First Aid', 'Seating Area'],
+    description:
+      'Premium 5-a-side and 7-a-side football turf in DHA Phase 5. FIFA-quality synthetic grass with professional floodlighting for evening matches. Popular with corporate leagues and weekend groups.',
+    highlights: ['Floodlights', 'Parking Available', 'Changing Rooms'],
+    operatingHours: { open: '06:00', close: '23:00' },
+    isPopular: true,
+    isFeatured: true,
+  },
+  {
+    id: 'arena-2',
+    name: 'Gulberg Padel Club',
+    slug: 'gulberg-padel-club',
+    sport: 'Padel',
+    location: {
+      city: 'Lahore',
+      area: 'Gulberg III',
+      address: 'Main Boulevard, Gulberg III, Lahore',
+      coordinates: { lat: 31.5204, lng: 74.3587 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80',
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80',
+      'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&q=80',
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
+    ],
+    pricing: { weekday: 1800, weekend: 2200, peak: 2800 },
+    rating: 4.6,
+    reviewCount: 89,
+    totalBookings: 923,
+    occupancyRate: 72,
+    amenities: ['Changing Rooms', 'Parking', 'Floodlights', 'CCTV', 'Water Cooler', 'Seating Area'],
+    description:
+      'Lahore\'s first dedicated padel facility with four glass-walled courts. Equipment rental available on-site. Ideal for beginners and competitive players alike.',
+    highlights: ['Glass Courts', 'Equipment Rental', 'Coaching Available'],
+    operatingHours: { open: '07:00', close: '22:00' },
+    isPopular: true,
+    isFeatured: true,
+  },
+  {
+    id: 'arena-3',
+    name: 'Model Town Cricket Nets',
+    slug: 'model-town-cricket-nets',
+    sport: 'Cricket',
+    location: {
+      city: 'Lahore',
+      area: 'Model Town',
+      address: 'Block H, Model Town, Lahore',
+      coordinates: { lat: 31.4826, lng: 74.3209 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&q=80',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80',
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
+    ],
+    pricing: { weekday: 1500, weekend: 2000, peak: 2500 },
+    rating: 4.5,
+    reviewCount: 156,
+    totalBookings: 2103,
+    occupancyRate: 78,
+    amenities: ['Parking', 'Floodlights', 'CCTV', 'Water Cooler', 'First Aid', 'Seating Area', 'Spectator Stand'],
+    description:
+      'Well-maintained tape-ball and hard-ball nets in the heart of Model Town. Book by the hour for practice sessions or friendly matches. Nets are resurfaced monthly.',
+    highlights: ['Tape-Ball Nets', 'Hard-Ball Available', 'Spectator Stand'],
+    operatingHours: { open: '06:00', close: '22:00' },
+    isPopular: true,
+    isFeatured: false,
+  },
+  {
+    id: 'arena-4',
+    name: 'Gulberg Basketball Courts',
+    slug: 'gulberg-basketball-courts',
+    sport: 'Basketball',
+    location: {
+      city: 'Lahore',
+      area: 'Gulberg II',
+      address: 'MM Alam Road, Gulberg II, Lahore',
+      coordinates: { lat: 31.5189, lng: 74.3505 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80',
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80',
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
+      'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&q=80',
+    ],
+    pricing: { weekday: 1200, weekend: 1600, peak: 2000 },
+    rating: 4.4,
+    reviewCount: 67,
+    totalBookings: 654,
+    occupancyRate: 63,
+    amenities: ['Changing Rooms', 'Parking', 'Floodlights', 'Water Cooler', 'Seating Area'],
+    description:
+      'Full-court and half-court basketball facilities in Gulberg. Evening slots fill fast on weekends. Bring your own ball or rent from reception.',
+    highlights: ['Full Court', 'Half Court', 'Floodlit'],
+    operatingHours: { open: '07:00', close: '23:00' },
+    isPopular: false,
+    isFeatured: true,
+  },
+  {
+    id: 'arena-5',
+    name: 'Johar Town Badminton Hall',
+    slug: 'johar-town-badminton-hall',
+    sport: 'Badminton',
+    location: {
+      city: 'Lahore',
+      area: 'Johar Town',
+      address: 'Block G-1, Johar Town, Lahore',
+      coordinates: { lat: 31.4697, lng: 74.2728 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1200&q=80',
+      'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&q=80',
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80',
+    ],
+    pricing: { weekday: 800, weekend: 1000, peak: 1400 },
+    rating: 4.7,
+    reviewCount: 201,
+    totalBookings: 2891,
+    occupancyRate: 91,
+    amenities: ['Changing Rooms', 'Parking', 'CCTV', 'Water Cooler', 'First Aid', 'Seating Area'],
+    description:
+      'Air-conditioned indoor badminton hall with six professional courts. Wooden flooring and tournament-grade nets. Coaching sessions available on weekday mornings.',
+    highlights: ['Air Conditioned', '6 Courts', 'Wooden Flooring'],
+    operatingHours: { open: '06:00', close: '23:00' },
+    isPopular: true,
+    isFeatured: true,
+  },
+  {
+    id: 'arena-6',
+    name: 'DHA Tennis Club',
+    slug: 'dha-tennis-club',
+    sport: 'Tennis',
+    location: {
+      city: 'Lahore',
+      area: 'DHA Phase 6',
+      address: 'CCA Commercial, DHA Phase 6, Lahore',
+      coordinates: { lat: 31.4412, lng: 74.4198 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1200&q=80',
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80',
+      'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&q=80',
+      'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80',
+    ],
+    pricing: { weekday: 2000, weekend: 2600, peak: 3000 },
+    rating: 4.9,
+    reviewCount: 78,
+    totalBookings: 512,
+    occupancyRate: 68,
+    amenities: ['Changing Rooms', 'Parking', 'Floodlights', 'CCTV', 'Water Cooler', 'First Aid', 'Seating Area'],
+    description:
+      'Clay and hard courts in DHA Phase 6. Well-maintained surfaces with ball machine rental. Popular with club players and coaching academies.',
+    highlights: ['Clay Court', 'Hard Court', 'Ball Machine'],
+    operatingHours: { open: '06:00', close: '21:00' },
+    isPopular: false,
+    isFeatured: true,
+  },
+  {
+    id: 'arena-7',
+    name: 'Johar Town Futsal Arena',
+    slug: 'johar-town-futsal-arena',
+    sport: 'Football',
+    location: {
+      city: 'Lahore',
+      area: 'Johar Town',
+      address: 'Block E-2, Johar Town, Lahore',
+      coordinates: { lat: 31.4712, lng: 74.2801 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&q=80',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
+      'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
+    ],
+    pricing: { weekday: 1800, weekend: 2400, peak: 2800 },
+    rating: 4.3,
+    reviewCount: 94,
+    totalBookings: 1102,
+    occupancyRate: 74,
+    amenities: ['Changing Rooms', 'Parking', 'Floodlights', 'CCTV', 'Water Cooler', 'Seating Area'],
+    description:
+      'Indoor futsal arena with sprung wooden flooring and enclosed walls. Five-a-side format. Great for rainy season when outdoor turfs are unavailable.',
+    highlights: ['Indoor', 'Sprung Floor', 'Rain-Proof'],
+    operatingHours: { open: '08:00', close: '23:00' },
+    isPopular: true,
+    isFeatured: false,
+  },
+  {
+    id: 'arena-8',
+    name: 'Bahria Town Cricket Academy',
+    slug: 'bahria-town-cricket-academy',
+    sport: 'Cricket',
+    location: {
+      city: 'Lahore',
+      area: 'Bahria Town',
+      address: 'Sector C, Bahria Town, Lahore',
+      coordinates: { lat: 31.3667, lng: 74.1925 },
+    },
+    images: [
+      'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&q=80',
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
+      'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80',
+      'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
+    ],
+    pricing: { weekday: 1200, weekend: 1800, peak: 2200 },
+    rating: 4.2,
+    reviewCount: 45,
+    totalBookings: 389,
+    occupancyRate: 55,
+    amenities: ['Parking', 'Floodlights', 'CCTV', 'Water Cooler', 'First Aid', 'Seating Area', 'Spectator Stand'],
+    description:
+      'Full-size practice nets and a center pitch in Bahria Town Lahore. Academy coaching programs run on weekends. Ideal for school teams and club practice.',
+    highlights: ['Practice Nets', 'Center Pitch', 'Academy Programs'],
+    operatingHours: { open: '06:00', close: '21:00' },
+    isPopular: false,
+    isFeatured: false,
+  },
+]
+
+export function getArenaBySlug(slug: string): Arena | undefined {
+  return arenas.find((a) => a.slug === slug)
+}
+
+export function getArenaById(id: string): Arena | undefined {
+  return arenas.find((a) => a.id === id)
+}

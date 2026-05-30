@@ -1,0 +1,170 @@
+export type SportType =
+  | 'Football'
+  | 'Cricket'
+  | 'Badminton'
+  | 'Basketball'
+  | 'Tennis'
+  | 'Padel'
+  | 'Futsal'
+  | 'Squash'
+
+export type SlotStatus = 'available' | 'booked' | 'pending' | 'blocked'
+
+export type BookingStatus = 'confirmed' | 'cancelled' | 'completed'
+
+export type UserRole = 'player' | 'owner'
+
+export interface Arena {
+  id: string
+  name: string
+  slug: string
+  sport: SportType
+  location: {
+    city: string
+    area: string
+    address: string
+    coordinates: { lat: number; lng: number }
+  }
+  images: string[]
+  pricing: {
+    weekday: number
+    weekend: number
+    peak: number
+  }
+  rating: number
+  reviewCount: number
+  totalBookings: number
+  occupancyRate: number
+  amenities: string[]
+  description: string
+  highlights: string[]
+  operatingHours: { open: string; close: string }
+  isPopular: boolean
+  isFeatured: boolean
+}
+
+export interface Slot {
+  id: string
+  arenaId: string
+  date: string
+  startTime: string
+  endTime: string
+  status: SlotStatus
+  price: number
+  isPeak: boolean
+}
+
+export interface Badge {
+  id: string
+  name: string
+  description: string
+  earned: boolean
+}
+
+export interface Player {
+  id: string
+  name: string
+  email: string
+  avatar: string
+  joinedDate: string
+  favoriteArenas: string[]
+  totalBookings: number
+  sport: SportType
+  badges: Badge[]
+}
+
+export interface Owner {
+  id: string
+  name: string
+  email: string
+  arenaIds: string[]
+  totalRevenue: number
+}
+
+export interface Booking {
+  id: string
+  playerId: string
+  arenaId: string
+  slotId: string
+  date: string
+  startTime: string
+  endTime: string
+  sport: SportType
+  amountPaid: number
+  status: BookingStatus
+  bookedAt: string
+}
+
+export interface Review {
+  id: string
+  arenaId: string
+  playerId: string
+  playerName: string
+  rating: number
+  comment: string
+  date: string
+  sport: SportType
+}
+
+export interface MonthlyRevenue {
+  month: string
+  amount: number
+}
+
+export interface DailyBookings {
+  date: string
+  count: number
+}
+
+export interface HourlyData {
+  hour: number
+  occupancy: number
+  isPeak: boolean
+}
+
+export interface SportBreakdown {
+  sport: SportType
+  percentage: number
+  bookings: number
+}
+
+export interface OwnerAnalytics {
+  arenaId: string
+  revenue: {
+    thisMonth: number
+    lastMonth: number
+    thisWeek: number
+    trend: MonthlyRevenue[]
+  }
+  bookings: {
+    total: number
+    thisMonth: number
+    completionRate: number
+    trend: DailyBookings[]
+  }
+  peakHours: HourlyData[]
+  sportBreakdown: SportBreakdown[]
+  occupancy: {
+    rate: number
+    weekdayAvg: number
+    weekendAvg: number
+  }
+}
+
+export interface ActivityItem {
+  id: string
+  playerName: string
+  action: 'booked' | 'reviewed' | 'cancelled'
+  arenaName: string
+  sport: SportType
+  time: string
+}
+
+export interface AuthUser {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  avatar?: string
+  arenaIds?: string[]
+}
