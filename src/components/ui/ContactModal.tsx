@@ -1,6 +1,5 @@
 import { X, Mail, ExternalLink } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import React from 'react'
 
 interface ContactModalProps {
   isOpen: boolean

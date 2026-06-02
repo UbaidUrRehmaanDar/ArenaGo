@@ -65,7 +65,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   enableTilt = true,
   enableMobileTilt = false,
   mobileTiltSensitivity = 5,
-  miniAvatarUrl,
+  miniAvatarUrl: _miniAvatarUrl,
   name = 'Creator',
   title = 'Co-Founder',
   handle = 'arenago',
