@@ -7,7 +7,7 @@ import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { BtnLink } from '../components/ui/Btn'
 import ubaidImg from '../assets/ubaid.jpeg'
-import rehanImg from '../assets/rehan.jpeg'
+import rehanImg from '../assets/rehan.jpg'
 
 import { type Variants } from 'framer-motion'
 
