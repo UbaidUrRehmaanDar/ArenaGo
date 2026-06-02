@@ -1,124 +1,207 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { gsap } from 'gsap'
 import { BtnLink } from '../ui/Btn'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { PillNav } from './PillNav'
 import { cn } from '../../utils/formatters'
+import arenaGoLogo from '../../assets/ArenaGoicon.png'
 
 interface NavbarProps {
   transparent?: boolean
 }
 
+const NAV_LINKS = [
+  { href: '/arenas',          label: 'Arenas' },
+  { href: '/#how-it-works',   label: 'How It Works' },
+  { href: '/dashboard/owner', label: 'For Owners' },
+  { href: '/login',           label: 'Log In' },
+]
+
 export function Navbar({ transparent = false }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+  const popoverRef = useRef<HTMLDivElement>(null)
 
+  /* ── scroll detection ─────────────────────────────────────────────── */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', onScroll)
+    window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  /* ── close on route change ────────────────────────────────────────── */
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
 
+  /* ── body scroll lock ─────────────────────────────────────────────── */
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
-    return () => {
-      document.body.style.overflow = ''
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
+
+  /* ── animate popover in/out ───────────────────────────────────────── */
+  useEffect(() => {
+    const el = popoverRef.current
+    if (!el) return
+    if (mobileOpen) {
+      gsap.set(el, { visibility: 'visible' })
+      gsap.fromTo(
+        el,
+        { opacity: 0, y: -12, scale: 0.97 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: 'power3.out', transformOrigin: 'top right' }
+      )
+    } else {
+      gsap.to(el, {
+        opacity: 0,
+        y: -8,
+        scale: 0.97,
+        duration: 0.2,
+        ease: 'power3.in',
+        transformOrigin: 'top right',
+        onComplete: () => gsap.set(el, { visibility: 'hidden' }),
+      })
     }
   }, [mobileOpen])
 
-  const links = [
-    { to: '/arenas', label: 'Arenas' },
-    { to: '/#how-it-works', label: 'How It Works' },
-    { to: '/dashboard/owner', label: 'For Owners' },
-  ]
+  const isScrolledOrSolid = scrolled || !transparent
 
   return (
-    <header
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled || !transparent || mobileOpen
-          ? 'bg-nav-scrim backdrop-blur-md border-b border-line'
-          : 'bg-transparent'
-      )}
-    >
-      <nav className="max-w-7xl mx-auto px-4 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="font-display text-2xl sm:text-[28px] text-lime tracking-wide shrink-0">
-          ARENAGO
-        </Link>
+    <>
+      <header
+        className={cn(
+          'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+          isScrolledOrSolid
+            ? 'bg-nav-scrim backdrop-blur-md border-b border-line'
+            : 'bg-transparent'
+        )}
+      >
+        <nav className="max-w-7xl mx-auto px-4 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-3">
 
-        <div className="hidden md:flex items-center gap-8">
-          {links.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={cn(
-                'relative text-[14px] text-mist font-body hover:text-chalk transition-colors',
-                location.pathname === link.to && 'text-chalk'
-              )}
-            >
-              {link.label}
-              {location.pathname === link.to && (
-                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-lime rounded-full" />
-              )}
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
+          {/* ── Logo ──────────────────────────────────────────────────── */}
           <Link
-            to="/login"
-            className="hidden sm:block text-[14px] text-mist font-body hover:text-chalk"
+            to="/"
+            className="flex items-center gap-2 shrink-0"
           >
-            Log In
+            <img
+              src={arenaGoLogo}
+              alt="ArenaGo"
+              className="h-8 w-8 sm:h-9 sm:w-9 object-contain"
+            />
+            <span className="font-display text-2xl sm:text-[28px] text-lime tracking-wide">
+              ARENAGO
+            </span>
           </Link>
-          <BtnLink to="/arenas" className="text-[13px] sm:text-[14px] px-4 sm:px-5 py-2 hidden sm:inline-flex">
-            Book Now
-          </BtnLink>
-          <button
-            type="button"
-            className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-sm border border-line bg-slate/60 text-chalk"
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen((open) => !open)}
-          >
-            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
-        </div>
-      </nav>
 
+          {/* ── Desktop links ─────────────────────────────────────────── */}
+          <div className="hidden md:flex items-center gap-8">
+            {NAV_LINKS.filter((l) => l.label !== 'Log In').map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={cn(
+                  'relative text-[14px] font-body hover:text-chalk transition-colors',
+                  location.pathname === link.href ? 'text-chalk' : 'text-mist'
+                )}
+              >
+                {link.label}
+                {location.pathname === link.href && (
+                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-lime rounded-full" />
+                )}
+              </Link>
+            ))}
+          </div>
+
+          {/* ── Desktop right actions ─────────────────────────────────── */}
+          <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              to="/login"
+              className="text-[14px] text-mist font-body hover:text-chalk transition-colors"
+            >
+              Log In
+            </Link>
+            <BtnLink to="/arenas" className="text-[13px] px-5 py-2">
+              Book Now
+            </BtnLink>
+          </div>
+
+          {/* ── Mobile right: theme toggle + pill hamburger ───────────── */}
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
+            <PillNav
+              items={NAV_LINKS}
+              activeHref={location.pathname}
+              baseColor="rgb(26 31 26)"
+              pillColor="rgb(200 255 0)"
+              hoveredPillTextColor="rgb(10 10 10)"
+              pillTextColor="rgb(245 240 232)"
+              onToggle={setMobileOpen}
+              forceClose={!mobileOpen}
+            />
+          </div>
+
+        </nav>
+      </header>
+
+      {/* ── Mobile popover — full-width, anchored below header ────────── */}
+      <div
+        ref={popoverRef}
+        className="fixed left-3 right-3 top-[60px] z-40 rounded-2xl overflow-hidden md:hidden"
+        style={{ visibility: 'hidden' }}
+      >
+        {/* frosted card */}
+        <div className="bg-[rgb(18_24_18)] border border-[rgba(200,255,0,0.12)] rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.7)] overflow-hidden">
+
+          {/* nav links */}
+          <ul className="p-2 space-y-0.5">
+            {NAV_LINKS.map((link) => {
+              const isActive = location.pathname === link.href
+              return (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center justify-between px-4 py-3.5 rounded-xl text-[15px] font-body font-medium transition-colors duration-150',
+                      isActive
+                        ? 'bg-lime/10 text-lime'
+                        : 'text-[rgb(245_240_232)] hover:bg-white/5 hover:text-white'
+                    )}
+                  >
+                    <span>{link.label}</span>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-lime shrink-0" />
+                    )}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* divider + CTA */}
+          <div className="px-2 pb-2 pt-1 border-t border-[rgba(200,255,0,0.08)]">
+            <BtnLink
+              to="/arenas"
+              className="w-full text-center text-[14px] py-3 mt-1"
+            >
+              Book Now
+            </BtnLink>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── backdrop to close on outside tap ──────────────────────────── */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-line bg-nav-scrim backdrop-blur-md px-4 py-4 space-y-1">
-          {links.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={cn(
-                'block rounded-sm px-3 py-3 text-[15px] font-body transition-colors',
-                location.pathname === link.to
-                  ? 'bg-slate text-chalk'
-                  : 'text-mist hover:text-chalk hover:bg-slate/50'
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Link
-            to="/login"
-            className="block rounded-sm px-3 py-3 text-[15px] font-body text-mist hover:text-chalk hover:bg-slate/50"
-          >
-            Log In
-          </Link>
-          <BtnLink to="/arenas" className="w-full mt-2 py-3 text-[14px]">
-            Book Now
-          </BtnLink>
-        </div>
+        <div
+          className="fixed inset-0 z-30 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
       )}
-    </header>
+    </>
   )
 }

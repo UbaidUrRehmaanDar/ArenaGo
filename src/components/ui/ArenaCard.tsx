@@ -30,12 +30,14 @@ function TrendingArenaCard({ arena, className }: { arena: Arena; className?: str
         className="absolute inset-0 w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-ground via-ground/40 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
-        <div>
+      <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <SportTag sport={arena.sport} size="sm" />
-          <h3 className="font-display text-2xl text-chalk mt-2">{arena.name}</h3>
+          <h3 className="font-display text-xl text-chalk mt-1 leading-tight line-clamp-2">
+            {arena.name}
+          </h3>
         </div>
-        <BtnMorphLabel variant="primary" className="text-sm px-4 py-2">
+        <BtnMorphLabel variant="primary" className="text-sm px-4 py-2 shrink-0 whitespace-nowrap">
           Book Now
         </BtnMorphLabel>
       </div>
@@ -55,11 +57,11 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
     return (
       <div
         className={cn(
-          'flex-shrink-0 w-[320px] md:w-[380px] rounded-sm overflow-hidden bg-slate',
+          'flex flex-col w-full rounded-sm overflow-hidden bg-slate h-full',
           className
         )}
       >
-        <div className="relative h-[220px]">
+        <div className="relative h-[220px] flex-shrink-0">
           <img src={arena.images[0]} alt={arena.name} className="w-full h-full object-cover" />
           <div className="absolute top-3 left-3">
             <SportTag sport={arena.sport} />
@@ -73,8 +75,19 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
             {arena.occupancyRate}% full
           </div>
         </div>
-        <div className="p-5">
-          <h3 className="font-display text-display-md text-chalk leading-tight">{arena.name}</h3>
+        <div className="flex flex-col p-5" style={{ minHeight: '180px' }}>
+          <h3
+            className="font-display text-[26px] text-chalk leading-tight"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              height: '64px',
+            }}
+          >
+            {arena.name}
+          </h3>
           <p className="flex items-center gap-1 text-[13px] text-mist mt-1">
             <MapPin size={12} />
             {arena.location.area}, {arena.location.city}
@@ -98,12 +111,12 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
   return (
     <motion.article
       className={cn(
-        'bg-slate rounded-sm overflow-hidden group',
+        'flex flex-col bg-slate rounded-sm overflow-hidden group',
         'hover:-translate-y-1 transition-all duration-200 hover:shadow-[0_8px_24px_rgba(200,255,0,0.08)]',
         className
       )}
     >
-      <div className="relative h-[200px]">
+      <div className="relative h-[200px] flex-shrink-0">
         <img src={arena.images[0]} alt={arena.name} className="w-full h-full object-cover" />
         <div className="absolute top-3 left-3">
           <SportTag sport={arena.sport} />
@@ -114,8 +127,19 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
           </span>
         )}
       </div>
-      <div className="p-5">
-        <h3 className="font-display text-display-md text-chalk leading-tight">{arena.name}</h3>
+      <div className="flex flex-col flex-1 p-5">
+        <h3
+          className="font-display text-[22px] text-chalk leading-tight"
+          style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            height: '56px',
+          }}
+        >
+          {arena.name}
+        </h3>
         <p className="flex items-center gap-1 text-[13px] text-mist mt-1">
           <MapPin size={12} />
           {arena.location.area}, {arena.location.city}
@@ -135,6 +159,7 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
         <p className="text-chalk mt-2 text-[15px]">
           From {formatPKR(arena.pricing.weekday)}/hr
         </p>
+        <div className="flex-1" />
         <div className="flex gap-2 mt-4">
           <BtnLink
             to={`/arenas/${arena.slug}`}

@@ -26,6 +26,9 @@
   --color-shimmer-mid: 58 74 58;
   --color-map-bg: 13 18 13;
   --color-day-inactive: 34 46 34;
+  --color-scrollbar-track: 18 24 18;
+  --color-scrollbar-thumb: 200 255 0;
+  --color-scrollbar-thumb-hover: 231 255 89;
 }
 
 [data-theme='light'] {
@@ -51,11 +54,44 @@
   --color-shimmer-mid: 208 221 208;
   --color-map-bg: 220 230 215;
   --color-day-inactive: 210 220 205;
+  --color-scrollbar-track: 235 240 230;
+  --color-scrollbar-thumb: 98 140 0;
+  --color-scrollbar-thumb-hover: 72 102 0;
 }
 
 @layer base {
   html {
     scroll-behavior: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-scrollbar-thumb)) rgb(var(--color-scrollbar-track));
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: rgb(var(--color-scrollbar-track));
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--color-scrollbar-thumb));
+    border: 3px solid rgb(var(--color-scrollbar-track));
+    border-radius: 9999px;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--color-scrollbar-thumb-hover));
   }
 
   body {
@@ -259,6 +295,11 @@
   color: rgb(var(--color-lime));
 }
 
+[data-theme='light'] .arena-btn--inverse {
+    background-color: rgb(var(--color-ground));
+    color: rgb(var(--color-chalk));
+  }
+
 [data-theme='dark'] .arena-btn--inverse {
   background-color: rgb(var(--color-ground));
   color: rgb(var(--color-lime-btn));
@@ -304,6 +345,12 @@
   .group:hover .arena-btn--in-group,
   .group:focus-visible .arena-btn--in-group {
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  main {
+    padding-bottom: 5rem; /* clears the 64px bottom nav */
   }
 }
 

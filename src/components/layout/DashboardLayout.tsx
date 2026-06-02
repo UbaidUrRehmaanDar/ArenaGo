@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { demoPlayer } from '../../data/users'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { cn } from '../../utils/formatters'
+import arenaGoLogo from '../../assets/ArenaGoicon.png'
 
 interface DashboardLayoutProps {
   role: 'player' | 'owner'
@@ -22,16 +23,18 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-ground flex flex-col md:flex-row">
       <header className="md:hidden sticky top-0 z-40 bg-turf border-b border-line px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="font-display text-xl text-lime">
-          ARENAGO
+        <Link to="/" className="flex items-center gap-2">
+          <img src={arenaGoLogo} alt="ArenaGo" className="h-6 w-6 object-contain" />
+          <span className="font-display text-xl text-lime">ARENAGO</span>
         </Link>
         <ThemeToggle />
       </header>
 
       <aside className="hidden md:flex flex-col w-60 bg-turf border-r border-line fixed h-full">
         <div className="p-6 border-b border-line flex items-center justify-between gap-3">
-          <Link to="/" className="font-display text-2xl text-lime">
-            ARENAGO
+          <Link to="/" className="flex items-center gap-2">
+            <img src={arenaGoLogo} alt="ArenaGo" className="h-7 w-7 object-contain" />
+            <span className="font-display text-2xl text-lime">ARENAGO</span>
           </Link>
           <ThemeToggle />
         </div>

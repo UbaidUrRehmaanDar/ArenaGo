@@ -81,15 +81,37 @@ export function HowItWorks() {
           {panels.map((panel) => (
             <div
               key={panel.title}
-              className="w-screen h-full flex-shrink-0 flex items-center justify-center p-8"
+              className="w-screen h-full flex-shrink-0 flex items-center justify-center px-12 py-8"
             >
-              <div className="max-w-lg w-full">
+              <div className={`w-full flex flex-col h-full justify-center ${panel.content === 'discover' ? 'max-w-3xl' : 'max-w-lg'}`}>
                 <h2 className="font-display text-display-xl text-lime mb-8">{panel.title}</h2>
                 {panel.content === 'discover' && (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 mt-6">
                     {arenas.slice(0, 2).map((a) => (
-                      <div key={a.id} className="scale-75 origin-left">
-                        <ArenaCard arena={a} variant="listing" />
+                      <div key={a.id} className="flex flex-col bg-slate rounded-sm overflow-hidden border border-line">
+                        <div className="relative h-[140px] flex-shrink-0">
+                          <img src={a.images[0]} alt={a.name} className="w-full h-full object-cover" />
+                          <div className="absolute top-2 left-2">
+                            <span className="bg-ground/80 text-lime font-mono text-[10px] px-2 py-0.5 rounded-sm">
+                              {a.sport.toUpperCase()}
+                            </span>
+                          </div>
+                          {a.isPopular && (
+                            <span className="absolute top-2 right-2 bg-amber text-ground font-display text-[10px] px-2 py-0.5">
+                              TRENDING
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-3 flex flex-col flex-1">
+                          <p className="font-display text-[15px] text-chalk leading-tight line-clamp-1">{a.name}</p>
+                          <p className="text-mist text-[11px] mt-0.5">{a.location.area}</p>
+                          <div className="flex items-center justify-between mt-auto pt-2">
+                            <span className="text-chalk text-[12px] font-mono">
+                              PKR {a.pricing.weekday.toLocaleString()}/hr
+                            </span>
+                            <span className="text-lime text-[11px] font-mono">{a.rating}★</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

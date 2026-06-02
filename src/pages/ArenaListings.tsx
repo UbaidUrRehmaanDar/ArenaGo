@@ -5,6 +5,7 @@ import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { ArenaCard } from '../components/ui/ArenaCard'
 import { Btn } from '../components/ui/Btn'
+import { SortDropdown, type SortValue } from '../components/ui/SortDropdown'
 import { arenas } from '../data/arenas'
 import type { SportType } from '../types'
 import { cn } from '../utils/formatters'
@@ -27,6 +28,7 @@ export function ArenaListings() {
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortValue>('popular')
   const [sport, setSport] = useState<SportType | 'All Sports'>(
     (searchParams.get('sport') as SportType) || 'All Sports'
   )
@@ -44,7 +46,7 @@ export function ArenaListings() {
     []
   )
 
-  const filtered = useMemo(() => {
+  const filteredBase = useMemo(() => {
     return arenas.filter((a) => {
       if (sport !== 'All Sports' && a.sport !== sport) return false
       if (city !== 'All Cities' && a.location.city !== city) return false
@@ -62,6 +64,13 @@ export function ArenaListings() {
       return true
     })
   }, [sport, city, extra, search])
+
+  const filtered = useMemo(() => {
+    const list = [...filteredBase]
+    if (sort === 'popular') return list.sort((a, b) => b.totalBookings - a.totalBookings)
+    if (sort === 'price') return list.sort((a, b) => a.pricing.weekday - b.pricing.weekday)
+    return list.sort((a, b) => b.rating - a.rating)
+  }, [filteredBase, sort])
 
   const mapMarkers = arenas.map((a, i) => ({
     id: a.id,
@@ -132,11 +141,7 @@ export function ArenaListings() {
             </div>
             <div className="flex justify-between items-center mt-6">
               <p className="text-[13px] text-mist">{filtered.length} arenas found</p>
-              <select className="bg-slate text-chalk text-[13px] px-3 py-2 rounded-sm border border-line focus:outline-lime">
-                <option>Sort: Most Popular</option>
-                <option>Sort: Price Low to High</option>
-                <option>Sort: Rating</option>
-              </select>
+              <SortDropdown value={sort} onChange={setSort} />
             </div>
           </header>
 
@@ -158,14 +163,15 @@ export function ArenaListings() {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 items-stretch">
                   {filtered.map((arena) => (
                     <div
                       key={arena.id}
+                      className="flex"
                       onMouseEnter={() => setHoveredArena(arena.id)}
                       onMouseLeave={() => setHoveredArena(null)}
                     >
-                      <ArenaCard arena={arena} />
+                      <ArenaCard arena={arena} className="w-full" />
                     </div>
                   ))}
                 </div>

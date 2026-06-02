@@ -29,6 +29,10 @@ export function ArenaSpotlight() {
     }
   }, [emblaApi])
 
+  const total = featured.length
+  const thumbWidth = 100 / total
+  const thumbOffset = (selected / (total - 1)) * (100 - thumbWidth)
+
   return (
     <section className="bg-turf noise-overlay py-20 overflow-hidden">
       <motion.div
@@ -58,20 +62,48 @@ export function ArenaSpotlight() {
           &gt;
         </button>
         <div className="overflow-visible" ref={emblaRef}>
-          <div className="flex gap-6 px-8 md:px-24">
+          <div className="flex items-stretch gap-6 px-8 md:px-24">
             {featured.map((arena, i) => (
               <div
                 key={arena.id}
-                className="flex-[0_0_85%] md:flex-[0_0_380px] min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                className="flex-[0_0_85%] md:flex-[0_0_380px] min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex"
                 style={{
                   transform: i === selected ? 'scale(1)' : 'scale(0.93)',
                   opacity: i === selected ? 1 : 0.6,
                 }}
               >
-                <ArenaCard arena={arena} variant="carousel" />
+                <ArenaCard arena={arena} variant="carousel" className="w-full" />
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Scrollbar */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-8">
+        <div
+          className="relative h-[3px] bg-chalk/15 rounded-full overflow-hidden cursor-pointer"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const ratio = (e.clientX - rect.left) / rect.width
+            const index = Math.round(ratio * (total - 1))
+            emblaApi?.scrollTo(Math.max(0, Math.min(total - 1, index)))
+          }}
+        >
+          <motion.div
+            className="absolute top-0 h-full bg-lime rounded-full"
+            style={{ width: `${thumbWidth}%` }}
+            animate={{ left: `${thumbOffset}%` }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          />
+        </div>
+        <div className="flex justify-between mt-2">
+          <span className="font-mono text-[11px] text-chalk/40 uppercase tracking-widest">
+            {String(selected + 1).padStart(2, '0')}
+          </span>
+          <span className="font-mono text-[11px] text-chalk/40 uppercase tracking-widest">
+            {String(total).padStart(2, '0')}
+          </span>
         </div>
       </div>
     </section>

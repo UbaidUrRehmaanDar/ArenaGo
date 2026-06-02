@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import { Component, type ReactNode } from 'react'
+import { Component, useLayoutEffect, type ReactNode } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { BookingProvider } from './context/BookingContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { useLenis } from './hooks/useLenis'
+import { MobileBottomNav } from './components/layout/MobileBottomNav'
 import { Landing } from './pages/Landing'
+import { Home } from './pages/Home'
+import { About } from './pages/About'
 import { ArenaListings } from './pages/ArenaListings'
 import { ArenaDetail } from './pages/ArenaDetail'
 import { BookingFlow } from './pages/BookingFlow'
@@ -50,6 +53,8 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Landing />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/about" element={<About />} />
         <Route path="/arenas" element={<ArenaListings />} />
         <Route path="/arenas/:slug" element={<ArenaDetail />} />
         <Route path="/booking" element={<BookingFlow />} />
@@ -62,13 +67,25 @@ function AnimatedRoutes() {
   )
 }
 
+function ScrollToTop() {
+  const location = useLocation()
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname])
+
+  return null
+}
+
 function AppContent() {
   useLenis()
   return (
     <ThemeProvider>
       <AuthProvider>
         <BookingProvider>
+          <ScrollToTop />
           <AnimatedRoutes />
+          <MobileBottomNav />
         </BookingProvider>
       </AuthProvider>
     </ThemeProvider>

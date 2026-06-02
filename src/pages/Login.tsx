@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { CountUp } from '../components/ui/CountUp'
 import { Btn } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { DEMO_CREDENTIALS } from '../data/users'
 import { cn } from '../utils/formatters'
+import arenaGoLogo from '../assets/ArenaGoicon.png'
 
 export function Login() {
   const { login } = useAuth()
@@ -31,7 +33,7 @@ export function Login() {
     e.preventDefault()
     const ok = login(email, password)
     if (ok) {
-      navigate(role === 'player' ? '/dashboard/player' : '/dashboard/owner')
+      navigate('/home')
     } else {
       setError('Invalid email or password')
     }
@@ -47,11 +49,14 @@ export function Login() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-ground/90 via-ground/70 to-ground/40" />
         <div className="relative z-10 flex items-start justify-between gap-4">
-          <div>
-            <p className="font-display text-5xl text-chalk">ARENAGO</p>
+          <div className="flex items-center gap-3">
+            <img src={arenaGoLogo} alt="ArenaGo" className="h-11 w-11 object-contain" />
+            <div>
+              <p className="font-display text-5xl text-chalk">ARENAGO</p>
             <p className="text-body-lg text-mist mt-4 max-w-md">
               Every great match starts with a booking.
             </p>
+            </div>
           </div>
           <ThemeToggle />
         </div>
@@ -72,6 +77,16 @@ export function Login() {
       </div>
 
       <div className="bg-ground flex items-center justify-center p-8 md:p-12 relative">
+        <div className="absolute top-4 left-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-slate border border-line text-chalk hover:text-lime transition-colors"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={16} />
+          </button>
+        </div>
         <div className="absolute top-4 right-4 md:hidden">
           <ThemeToggle />
         </div>
