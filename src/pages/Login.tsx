@@ -33,7 +33,7 @@ export function Login() {
     e.preventDefault()
     const ok = login(email, password)
     if (ok) {
-      navigate('/home')
+      navigate(role === 'owner' ? '/dashboard/owner' : '/dashboard/player')
     } else {
       setError('Invalid email or password')
     }

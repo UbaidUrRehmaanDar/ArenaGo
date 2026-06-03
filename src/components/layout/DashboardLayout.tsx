@@ -50,6 +50,13 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1">
+          <Link
+            to="/home"
+            className="block px-4 py-2.5 text-[15px] font-body rounded-sm border-l-2 border-transparent text-mist hover:text-chalk mb-3"
+          >
+            ← Home
+          </Link>
+          <div className="h-px bg-line mb-3" />
           {links.map((link) => (
             <Link
               key={link.to}
