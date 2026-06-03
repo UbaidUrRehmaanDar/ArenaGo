@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { StatCard } from '../components/ui/StatCard'
+import { HomeTab } from '../components/sections/HomeTab'
 import { useAuth } from '../context/AuthContext'
 import { getAnalyticsForOwner, heatmapData, HEATMAP_DAYS, HEATMAP_HOURS } from '../data/analytics'
 import { getArenaById } from '../data/arenas'
@@ -19,6 +20,7 @@ import { useChartTheme } from '../hooks/useChartTheme'
 import { cn, formatPKR } from '../utils/formatters'
 
 const links = [
+  { to: '/dashboard/owner/home', label: 'Home' },
   { to: '/dashboard/owner', label: 'Overview' },
   { to: '/dashboard/owner/bookings', label: 'Bookings' },
   { to: '/dashboard/owner/arenas', label: 'Arenas' },
@@ -322,6 +324,7 @@ export function OwnerDashboard() {
     <Routes>
       <Route element={<DashboardLayout role="owner" links={links} />}>
         <Route index element={<OwnerOverview />} />
+        <Route path="home" element={<HomeTab />} />
         <Route path="bookings" element={<OwnerBookings />} />
         <Route path="arenas" element={<OwnerArenas />} />
         <Route path="analytics" element={<OwnerAnalytics />} />

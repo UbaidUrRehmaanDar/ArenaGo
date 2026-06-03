@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { format, parseISO, isFuture } from 'date-fns'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { StatCard } from '../components/ui/StatCard'
+import { HomeTab } from '../components/sections/HomeTab'
 import { SportTag } from '../components/ui/SportTag'
 import { useAuth } from '../context/AuthContext'
 import { getPlayerBookings } from '../data/bookings'
@@ -12,6 +13,7 @@ import { formatPKR } from '../utils/formatters'
 import { cn } from '../utils/formatters'
 
 const links = [
+  { to: '/dashboard/player/home', label: 'Home' },
   { to: '/dashboard/player', label: 'Overview' },
   { to: '/dashboard/player/bookings', label: 'My Bookings' },
   { to: '/dashboard/player/favourites', label: 'Favourite Arenas' },
@@ -245,6 +247,7 @@ export function PlayerDashboard() {
     <Routes>
       <Route element={<DashboardLayout role="player" links={links} />}>
         <Route index element={<Overview />} />
+        <Route path="home" element={<HomeTab />} />
         <Route path="bookings" element={<MyBookings />} />
         <Route path="favourites" element={<Favourites />} />
         <Route path="activity" element={<Activity />} />
