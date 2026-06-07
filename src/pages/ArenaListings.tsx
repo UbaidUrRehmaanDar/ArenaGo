@@ -89,7 +89,7 @@ export function ArenaListings() {
       <PageWrapper className="pt-24 pb-16 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <header className="mb-10">
-            <h1 className="font-display text-display-lg text-chalk">
+            <h1 className="font-display text-[clamp(1.8rem,7vw,5rem)] text-chalk">
               FIND YOUR ARENA{' '}
               <span className="text-lime">IN LAHORE</span>
             </h1>

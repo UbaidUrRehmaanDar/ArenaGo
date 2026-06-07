@@ -65,16 +65,16 @@ export function SportCategories() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="mb-10"
         >
-          <h2 className="font-display text-display-lg text-chalk">BROWSE BY SPORT</h2>
+        <h2 className="font-display text-[clamp(2rem,7vw,5rem)] text-chalk">BROWSE BY SPORT</h2>
         </motion.div>
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate={inView ? 'visible' : 'hidden'}
-          className="grid grid-cols-1 md:grid-cols-4 gap-3 auto-rows-[180px] md:auto-rows-[200px]"
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 auto-rows-[160px] md:auto-rows-[200px]"
         >
           {categories.map((cat) => (
-            <motion.div key={cat.sport} variants={itemVariants} className={`min-h-[180px] ${cat.span}`}>
+            <motion.div key={cat.sport} variants={itemVariants} className={`min-h-[160px] ${cat.span}`}>
               <Link
                 to={`/arenas?sport=${cat.sport}`}
                 className="relative overflow-hidden rounded-sm group w-full h-full block"
@@ -85,8 +85,8 @@ export function SportCategories() {
                   className="absolute inset-0 w-full h-full object-cover grayscale-[60%] brightness-50 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500"
                 />
                 <div className="absolute inset-0 bg-lime/0 group-hover:bg-lime/20 mix-blend-multiply transition-all duration-500" />
-                <div className="absolute bottom-0 left-0 p-6 z-10">
-                  <h3 className="font-display text-display-md text-chalk">{cat.sport}</h3>
+                <div className="absolute bottom-0 left-0 p-3 md:p-6 z-10">
+                  <h3 className="font-display text-xl md:text-display-md text-chalk">{cat.sport}</h3>
                   <p className="text-lime font-body text-sm translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                     Book Now →
                   </p>

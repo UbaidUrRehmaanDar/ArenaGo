@@ -42,7 +42,7 @@ export function ArenaSpotlight() {
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="max-w-7xl mx-auto px-4 md:px-8 mb-10"
       >
-        <h2 className="font-display text-display-lg text-chalk">FEATURED ARENAS</h2>
+        <h2 className="font-display text-[clamp(2rem,7vw,5rem)] text-chalk">FEATURED ARENAS</h2>
       </motion.div>
       <div className="relative">
         <button

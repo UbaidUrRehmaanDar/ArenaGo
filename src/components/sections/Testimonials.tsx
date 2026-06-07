@@ -19,7 +19,7 @@ export function Testimonials() {
 
   return (
     <section className="py-20 bg-turf">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-12">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
         <motion.div
           ref={ref}
           initial={{ opacity: 0, x: -32 }}
@@ -35,7 +35,7 @@ export function Testimonials() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="font-display text-display-lg text-chalk leading-tight"
+              className="font-display text-[clamp(1.6rem,5vw,3.5rem)] text-chalk leading-tight"
             >
               "{topReviews[quoteIndex].comment}"
             </motion.p>

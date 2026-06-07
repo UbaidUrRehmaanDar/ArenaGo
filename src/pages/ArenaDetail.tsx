@@ -146,7 +146,7 @@ export function ArenaDetail() {
 
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
           <div className="mb-8">
-            <h1 className="font-display text-display-lg text-chalk">{arena.name}</h1>
+            <h1 className="font-display text-[clamp(1.8rem,6vw,4rem)] text-chalk">{arena.name}</h1>
             <div className="flex flex-wrap items-center gap-3 mt-3">
               <SportTag sport={arena.sport} size="md" />
               <span className="flex items-center gap-1 text-mist text-[13px]">
@@ -178,6 +178,40 @@ export function ArenaDetail() {
               <p className="text-[15px] text-chalk/90 leading-relaxed mb-8">
                 {arena.description}
               </p>
+
+              {/* Mobile booking panel */}
+              <div className="lg:hidden bg-slate p-5 rounded-sm border border-line mb-8">
+                <h2 className="font-display text-2xl text-chalk mb-4">BOOK A SLOT</h2>
+                <div className="flex gap-1 overflow-x-auto mb-4 pb-1">
+                  {days.map((day, i) => {
+                    const active = selectedDay === i
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedDay(i)}
+                        className={cn('btn-day', active ? 'btn-day-active' : 'btn-day-inactive')}
+                      >
+                        {format(day, 'EEE d')}
+                      </button>
+                    )
+                  })}
+                </div>
+                <SlotGrid slots={daySlots} selectedId={slot?.id} onSelect={handleSlotSelect} />
+                {slot && (
+                  <div className="mt-5 pt-5 border-t border-line">
+                    <p className="font-mono text-sm text-mist">
+                      {format(parseISO(selectedDate), 'd MMM yyyy')} · {formatTime(slot.startTime)}
+                    </p>
+                    <p className="font-mono text-lime mt-2">
+                      1 hr × {formatPKR(slot.price)} = {formatPKR(slot.price)}
+                    </p>
+                    <Btn onClick={handleConfirm} className="w-full mt-4 py-3">
+                      Confirm Booking
+                    </Btn>
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                 {allAmenities.map((name) => {

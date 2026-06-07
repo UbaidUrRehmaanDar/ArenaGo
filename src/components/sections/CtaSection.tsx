@@ -16,8 +16,8 @@ export function CtaSection() {
         className="max-w-3xl mx-auto px-4 text-center text-ground"
       >
         <p className="font-mono text-xs tracking-widest mb-4">— READY WHEN YOU ARE</p>
-        <h2 className="font-display text-display-xl leading-none">YOUR COURT IS WAITING.</h2>
-        <p className="font-body text-lg mt-6 opacity-80">
+        <h2 className="font-display text-[clamp(2.5rem,10vw,6rem)] leading-none">YOUR COURT IS WAITING.</h2>
+        <p className="font-body text-base md:text-lg mt-6 opacity-80">
           Join thousands of players booking arenas across Lahore.
         </p>
         <BtnLink to="/arenas" variant="inverse" className="mt-10 px-8 py-4">

@@ -76,8 +76,8 @@ export function FeatureShowcase() {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
-              <p className="font-display text-display-xl text-lime leading-none">01</p>
-              <h2 className="font-display text-display-lg text-chalk mt-4">Instant Booking</h2>
+              <p className="font-display text-4xl md:text-display-xl text-lime leading-none">01</p>
+              <h2 className="font-display text-[clamp(1.8rem,5vw,4rem)] text-chalk mt-4">Instant Booking</h2>
               <p className="text-mist font-body mt-4 max-w-md leading-relaxed">
                 Pick your slot from a live grid. See what is available, what is peak, and what is
                 already taken — before you commit.
@@ -118,8 +118,8 @@ export function FeatureShowcase() {
             ))}
           </div>
           <div className="order-1 md:order-2">
-            <p className="font-display text-display-xl text-lime leading-none">02</p>
-            <h2 className="font-display text-display-lg text-chalk mt-4">Live Occupancy</h2>
+            <p className="font-display text-4xl md:text-display-xl text-lime leading-none">02</p>
+            <h2 className="font-display text-[clamp(1.8rem,5vw,4rem)] text-chalk mt-4">Live Occupancy</h2>
             <p className="text-mist font-body mt-4 max-w-md">
               See how full each arena is before you book. Real occupancy data across Lahore.
             </p>
@@ -130,8 +130,8 @@ export function FeatureShowcase() {
       <section className={sectionClass}>
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center w-full">
           <div>
-            <p className="font-display text-display-xl text-lime leading-none">03</p>
-            <h2 className="font-display text-display-lg text-chalk mt-4">
+            <p className="font-display text-4xl md:text-display-xl text-lime leading-none">03</p>
+            <h2 className="font-display text-[clamp(1.8rem,5vw,4rem)] text-chalk mt-4">
               Built for Arena Owners
             </h2>
             <p className="text-mist font-body mt-4 max-w-md">
@@ -160,8 +160,8 @@ export function FeatureShowcase() {
 
       <section className={`${sectionClass} bg-turf max-lg:mb-0 max-lg:border-b-0`}>
         <div className="max-w-7xl mx-auto w-full text-center">
-          <p className="font-display text-display-xl text-lime leading-none mb-8">04</p>
-          <h2 className="font-display text-display-lg text-chalk mb-10 lg:mb-12">Mobile First</h2>
+          <p className="font-display text-4xl md:text-display-xl text-lime leading-none mb-8">04</p>
+          <h2 className="font-display text-[clamp(1.8rem,5vw,4rem)] text-chalk mb-10 lg:mb-12">Mobile First</h2>
           <motion.div
             initial={{ opacity: 0, y: 32, scale: 0.95 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}

@@ -17,12 +17,12 @@ export function HeroSection() {
       </p>
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-8 w-full py-12 lg:py-0">
-        <div className="grid lg:grid-cols-[60%_40%] gap-12 items-center">
+        <div className="grid lg:grid-cols-[60%_40%] gap-8 lg:gap-12 items-center">
           <div>
             <p className="font-mono text-[11px] text-lime tracking-[0.2em] mb-4">
               LAHORE
             </p>
-            <h1 className="font-display text-display-xl text-chalk leading-[0.95]">
+            <h1 className="font-display text-[clamp(2.8rem,10vw,7rem)] text-chalk leading-[0.95]">
               <motion.span
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -45,7 +45,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.38, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="text-body-lg text-mist max-w-md mt-6 font-body"
+              className="text-base md:text-body-lg text-mist max-w-md mt-6 font-body"
             >
               Find and reserve sports arenas in your city. No calls, no waiting, no hassle.
             </motion.p>
@@ -53,7 +53,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-wrap gap-4 mt-8"
+              className="flex flex-wrap gap-3 mt-8"
             >
               <BtnLink to="/arenas" className="px-6 py-3">
                 Browse Arenas
@@ -66,7 +66,7 @@ export function HeroSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.65, duration: 0.8 }}
-              className="flex flex-wrap gap-8 mt-12 pt-8 border-t border-line"
+              className="flex flex-wrap gap-6 md:gap-8 mt-10 md:mt-12 pt-8 border-t border-line"
             >
               {[
                 { value: 2400, suffix: '+', label: 'Active Players' },
@@ -74,7 +74,7 @@ export function HeroSection() {
                 { value: 12000, suffix: '+', label: 'Bookings Completed' },
               ].map((stat) => (
                 <div key={stat.label}>
-                  <p className="font-display text-4xl md:text-5xl text-lime">
+                  <p className="font-display text-3xl md:text-5xl text-lime">
                     <CountUp end={stat.value} duration={2} suffix={stat.suffix} />
                   </p>
                   <p className="text-[13px] text-mist font-body mt-1">{stat.label}</p>

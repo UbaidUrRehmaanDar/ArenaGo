@@ -153,7 +153,7 @@ export function HowItWorks() {
       <div className="lg:hidden px-4 py-8 space-y-24">
         {panels.map((panel) => (
           <article key={panel.title} className="relative">
-            <h2 className="font-display text-display-lg text-lime mb-8">{panel.title}</h2>
+            <h2 className="font-display text-[clamp(2rem,7vw,5rem)] text-lime mb-8">{panel.title}</h2>
             {panel.content === 'discover' && (
               <ArenaCard arena={arenas[0]} variant="listing" />
             )}

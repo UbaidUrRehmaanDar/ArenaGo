@@ -111,7 +111,7 @@ export function About() {
 
           <motion.h1
             custom={1} variants={fadeUp} initial="hidden" animate="show"
-            className="font-display text-display-lg md:text-[clamp(56px,9vw,110px)] text-chalk leading-[0.92] max-w-4xl"
+            className="font-display text-[clamp(2.5rem,10vw,7rem)] text-chalk leading-[0.92] max-w-4xl"
           >
             WE BUILT THIS<br />
             <span className="text-lime">FOR THE GAME</span>
@@ -142,7 +142,7 @@ export function About() {
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} viewport={{ once: true }}
             >
               <p className="font-mono text-lime text-[12px] uppercase tracking-[0.2em] mb-4">Vision</p>
-              <h2 className="font-display text-display-md text-chalk leading-tight">
+              <h2 className="font-display text-[clamp(1.8rem,5vw,3.5rem)] text-chalk leading-tight">
                 PAKISTAN'S SPORTS<br />INFRASTRUCTURE,<br />ONLINE
               </h2>
             </motion.div>

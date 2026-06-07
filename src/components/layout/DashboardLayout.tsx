@@ -74,13 +74,13 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
         </button>
       </aside>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-turf border-t border-line flex z-50">
-        {links.slice(0, 4).map((link) => (
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-turf border-t border-line flex overflow-x-auto z-50">
+        {links.map((link) => (
           <Link
             key={link.to}
             to={link.to}
             className={cn(
-              'flex-1 py-3 text-center text-[11px] font-body',
+              'flex-shrink-0 flex-1 min-w-[60px] py-3 text-center text-[10px] font-body',
               location.pathname === link.to ? 'text-lime' : 'text-mist'
             )}
           >

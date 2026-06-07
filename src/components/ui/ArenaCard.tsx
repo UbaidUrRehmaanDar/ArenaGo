@@ -19,7 +19,7 @@ function TrendingArenaCard({ arena, className }: { arena: Arena; className?: str
     <Link
       to={`/arenas/${arena.slug}`}
       className={cn(
-        'flex-shrink-0 w-[350px] h-[200px] relative rounded-sm overflow-hidden group',
+        'flex-shrink-0 w-[280px] sm:w-[350px] h-[200px] relative rounded-sm overflow-hidden group',
         'hover:-translate-y-1 transition-transform duration-200 hover:shadow-[0_8px_24px_rgba(200,255,0,0.08)]',
         className
       )}
