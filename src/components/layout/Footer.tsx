@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import arenaGoLogo from '../../assets/ArenaGoicon.png'
+import { ArenaGoLogo } from '../ui/ArenaGoLogo'
 
 export function Footer() {
   return (
@@ -7,14 +7,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <img
-                src={arenaGoLogo}
-                alt="ArenaGo"
-                className="h-8 w-8 object-contain"
-              />
-              <p className="font-display text-2xl text-lime">ARENAGO</p>
-            </div>
+            <ArenaGoLogo iconSize="h-10 w-10" textSize="text-2xl" className="mb-3" />
             <p className="text-[15px] text-mist font-body">
               Book your court. Show up and play.
             </p>

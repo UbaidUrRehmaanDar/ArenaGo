@@ -5,7 +5,7 @@ import { BtnLink } from '../ui/Btn'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { PillNav } from './PillNav'
 import { cn } from '../../utils/formatters'
-import arenaGoLogo from '../../assets/ArenaGoicon.png'
+import { ArenaGoLogo } from '../ui/ArenaGoLogo'
 
 interface NavbarProps {
   transparent?: boolean
@@ -81,18 +81,8 @@ export function Navbar({ transparent = false }: NavbarProps) {
         <nav className="max-w-7xl mx-auto px-4 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-3">
 
           {/* ── Logo ──────────────────────────────────────────────────── */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 shrink-0"
-          >
-            <img
-              src={arenaGoLogo}
-              alt="ArenaGo"
-              className="h-8 w-8 sm:h-9 sm:w-9 object-contain"
-            />
-            <span className="font-display text-2xl sm:text-[28px] text-lime tracking-wide">
-              ARENAGO
-            </span>
+          <Link to="/" className="shrink-0">
+            <ArenaGoLogo iconSize="h-10 w-10 sm:h-11 sm:w-11" textSize="text-2xl sm:text-[28px]" />
           </Link>
 
           {/* ── Desktop links ─────────────────────────────────────────── */}
@@ -101,10 +91,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
               <Link
                 key={link.href}
                 to={link.href}
-                className={cn(
-                  'relative text-[14px] font-body hover:text-chalk transition-colors',
-                  location.pathname === link.href ? 'text-chalk' : 'text-mist'
-                )}
+                className="relative text-[14px] font-body font-semibold text-chalk transition-colors hover:text-lime"
               >
                 {link.label}
                 {location.pathname === link.href && (
@@ -119,7 +106,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
             <ThemeToggle />
             <Link
               to="/login"
-              className="text-[14px] text-mist font-body hover:text-chalk transition-colors"
+              className="text-[14px] text-chalk font-body font-semibold hover:text-lime transition-colors"
             >
               Log In
             </Link>

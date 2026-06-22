@@ -13,9 +13,11 @@
               : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.style.colorScheme = theme;
+        var link = document.querySelector('link[rel*="icon"]');
+        if (link) link.href = theme === 'dark' ? '/favicon-dark.png' : '/favicon-light.png';
       })();
     </script>
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="/favicon-dark.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="ArenaGo — Book your court. Show up and play. Sports arena booking across Lahore, Karachi, and Islamabad." />
     <title>ArenaGo — Book Your Court</title>

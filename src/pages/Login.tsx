@@ -7,7 +7,7 @@ import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { DEMO_CREDENTIALS } from '../data/users'
 import { cn } from '../utils/formatters'
-import arenaGoLogo from '../assets/ArenaGoicon.png'
+import { ArenaGoLogo } from '../components/ui/ArenaGoLogo'
 
 export function Login() {
   const { login } = useAuth()
@@ -50,9 +50,8 @@ export function Login() {
         <div className="absolute inset-0 bg-gradient-to-r from-ground/90 via-ground/70 to-ground/40" />
         <div className="relative z-10 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src={arenaGoLogo} alt="ArenaGo" className="h-11 w-11 object-contain" />
+            <ArenaGoLogo iconSize="h-14 w-14" textSize="text-5xl" />
             <div>
-              <p className="font-display text-5xl text-chalk">ARENAGO</p>
             <p className="text-body-lg text-mist mt-4 max-w-md">
               Every great match starts with a booking.
             </p>
