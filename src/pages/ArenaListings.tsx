@@ -6,8 +6,8 @@ import { PageWrapper } from '../components/layout/PageWrapper'
 import { ArenaCard } from '../components/ui/ArenaCard'
 import { Btn } from '../components/ui/Btn'
 import { SortDropdown, type SortValue } from '../components/ui/SortDropdown'
-import { arenas } from '../data/arenas'
-import type { SportType } from '../types'
+import { fetchArenas } from '../services/supabaseData'
+import type { Arena, SportType } from '../types'
 import { cn } from '../utils/formatters'
 
 const sportFilters: (SportType | 'All Sports')[] = [
@@ -36,18 +36,24 @@ export function ArenaListings() {
   const [extra, setExtra] = useState<string | null>(null)
   const [hoveredArena, setHoveredArena] = useState<string | null>(null)
 
+  const [allArenas, setAllArenas] = useState<Arena[]>([])
+  
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800)
-    return () => clearTimeout(t)
+    async function loadArenas() {
+      const data = await fetchArenas()
+      setAllArenas(data)
+      setLoading(false)
+    }
+    loadArenas()
   }, [])
 
   const trending = useMemo(
-    () => [...arenas].sort((a, b) => b.totalBookings - a.totalBookings).slice(0, 3),
-    []
+    () => [...allArenas].sort((a, b) => b.totalBookings - a.totalBookings).slice(0, 3),
+    [allArenas]
   )
 
   const filteredBase = useMemo(() => {
-    return arenas.filter((a) => {
+    return allArenas.filter((a) => {
       if (sport !== 'All Sports' && a.sport !== sport) return false
       if (city !== 'All Cities' && a.location.city !== city) return false
       if (extra === 'Under PKR 1500' && a.pricing.weekday > 1500) return false
@@ -63,7 +69,7 @@ export function ArenaListings() {
       }
       return true
     })
-  }, [sport, city, extra, search])
+  }, [allArenas, sport, city, extra, search])
 
   const filtered = useMemo(() => {
     const list = [...filteredBase]
@@ -72,7 +78,7 @@ export function ArenaListings() {
     return list.sort((a, b) => b.rating - a.rating)
   }, [filteredBase, sort])
 
-  const mapMarkers = arenas.map((a, i) => ({
+  const mapMarkers = allArenas.map((a, i) => ({
     id: a.id,
     abbr: a.name
       .split(' ')

@@ -29,13 +29,13 @@ export function Login() {
     setError('')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const ok = login(email, password)
+    const ok = await login(email, password)
     if (ok) {
       navigate(role === 'owner' ? '/dashboard/owner/home' : '/dashboard/player/home')
     } else {
-      setError('Invalid email or password')
+      setError('Invalid email or password. (Make sure this user exists in your Supabase project)')
     }
   }
 

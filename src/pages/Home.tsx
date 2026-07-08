@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { format, isFuture, parseISO } from 'date-fns'
 import { CalendarClock, ChevronRight, Compass, Sparkles, Trophy } from 'lucide-react'
@@ -8,14 +8,30 @@ import { ArenaCard } from '../components/ui/ArenaCard'
 import { BtnLink } from '../components/ui/Btn'
 import { useAuth } from '../context/AuthContext'
 import { activityFeed } from '../data/activity'
-import { arenas } from '../data/arenas'
-import { getPlayerBookings } from '../data/bookings'
 import { demoOwner } from '../data/users'
 import { formatPKR } from '../utils/formatters'
+import { fetchArenas, fetchPlayerBookings } from '../services/supabaseData'
+import type { Arena, Booking } from '../types'
 
 export function Home() {
   const { user } = useAuth()
   const rootRef = useRef<HTMLElement>(null)
+
+  const [arenas, setArenas] = useState<Arena[]>([])
+  const [playerBookings, setPlayerBookings] = useState<Booking[]>([])
+
+  useEffect(() => {
+    async function loadData() {
+      const fetchedArenas = await fetchArenas()
+      setArenas(fetchedArenas)
+      
+      if (user?.id && user.role === 'player') {
+        const bookings = await fetchPlayerBookings(user.id)
+        setPlayerBookings(bookings)
+      }
+    }
+    loadData()
+  }, [user])
 
   useLayoutEffect(() => {
     if (!rootRef.current) return
@@ -39,12 +55,11 @@ export function Home() {
     return () => ctx.revert()
   }, [])
 
-  const featuredArenas = useMemo(() => arenas.filter((a) => a.isFeatured).slice(0, 4), [])
+  const featuredArenas = useMemo(() => arenas.filter((a) => a.isFeatured).slice(0, 4), [arenas])
   const trendingArenas = useMemo(
     () => [...arenas].sort((a, b) => b.occupancyRate - a.occupancyRate).slice(0, 3),
-    []
+    [arenas]
   )
-  const playerBookings = useMemo(() => getPlayerBookings('player-1'), [])
   const upcomingBookings = useMemo(
     () =>
       playerBookings
@@ -54,8 +69,8 @@ export function Home() {
   )
 
   const ownerArenas = useMemo(
-    () => arenas.filter((arena) => demoOwner.arenaIds.includes(arena.id)),
-    []
+    () => arenas.filter((arena) => user?.arenaIds?.includes(arena.id)),
+    [arenas, user]
   )
 
   const role = user?.role ?? 'player'
@@ -64,7 +79,7 @@ export function Home() {
         { label: 'Owned Arenas', value: ownerArenas.length.toString() },
         {
           label: 'Avg Occupancy',
-          value: `${Math.round(ownerArenas.reduce((acc, arena) => acc + arena.occupancyRate, 0) / ownerArenas.length)}%`,
+          value: ownerArenas.length > 0 ? `${Math.round(ownerArenas.reduce((acc, arena) => acc + arena.occupancyRate, 0) / ownerArenas.length)}%` : '0%',
         },
         { label: 'Revenue (Demo)', value: formatPKR(demoOwner.totalRevenue) },
       ]

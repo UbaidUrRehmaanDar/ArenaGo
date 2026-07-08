@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import {
   Line,
@@ -14,10 +14,10 @@ import { StatCard } from '../components/ui/StatCard'
 import { HomeTab } from '../components/sections/HomeTab'
 import { useAuth } from '../context/AuthContext'
 import { getAnalyticsForOwner, heatmapData, HEATMAP_DAYS, HEATMAP_HOURS } from '../data/analytics'
-import { getArenaById } from '../data/arenas'
-import { demoOwner } from '../data/users'
+import { fetchArenaById } from '../services/supabaseData'
 import { useChartTheme } from '../hooks/useChartTheme'
 import { cn, formatPKR } from '../utils/formatters'
+import type { Arena } from '../types'
 
 const links = [
   { to: '/dashboard/owner/home', label: 'Home' },
@@ -30,9 +30,32 @@ const links = [
 
 const PIE_COLORS = ['#C8FF00', '#FF9500', '#00B4D8', '#FF6B35', '#C39BD3']
 
+function useOwnerData() {
+  const { user } = useAuth()
+  const [arenas, setArenas] = useState<Arena[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      if (!user || !user.arenaIds) return
+      const loaded: Arena[] = []
+      for (const id of user.arenaIds) {
+        const a = await fetchArenaById(id)
+        if (a) loaded.push(a)
+      }
+      setArenas(loaded)
+      setLoading(false)
+    }
+    load()
+  }, [user])
+
+  return { user, arenas, loading }
+}
+
 function OwnerOverview() {
-  const analytics = getAnalyticsForOwner(demoOwner.arenaIds)
-  const combined = analytics[0]
+  const { user } = useAuth()
+  const analytics = getAnalyticsForOwner(user?.arenaIds || [])
+  const combined = analytics[0] || { revenue: { thisMonth: 0, lastMonth: 1, thisWeek: 0 }, bookings: { thisMonth: 0, completionRate: 0 } }
   const revChange = Math.round(
     ((combined.revenue.thisMonth - combined.revenue.lastMonth) /
       combined.revenue.lastMonth) *
@@ -74,7 +97,9 @@ function OwnerOverview() {
 }
 
 function OwnerBookings() {
-  const analytics = getAnalyticsForOwner(demoOwner.arenaIds)[0]
+  const { user } = useAuth()
+  const analytics = getAnalyticsForOwner(user?.arenaIds || [])[0]
+  if (!analytics) return null
   return (
     <div>
       <h1 className="font-display text-display-md text-chalk mb-6">BOOKINGS</h1>
@@ -97,12 +122,15 @@ function OwnerBookings() {
 }
 
 function OwnerArenas() {
-  const ownerArenas = demoOwner.arenaIds.map(getArenaById).filter(Boolean)
+  const { arenas, loading } = useOwnerData()
+  
+  if (loading) return <div className="text-mist">Loading...</div>
+
   return (
     <div>
       <h1 className="font-display text-display-md text-chalk mb-6">MY ARENAS</h1>
       <div className="grid gap-4">
-        {ownerArenas.map(
+        {arenas.map(
           (arena) =>
             arena && (
               <div key={arena.id} className="bg-slate p-6 rounded-sm flex gap-6">
@@ -132,8 +160,12 @@ function OwnerArenas() {
 }
 
 function OwnerAnalytics() {
-  const analytics = getAnalyticsForOwner(demoOwner.arenaIds)[0]
+  const { user } = useAuth()
+  const analytics = getAnalyticsForOwner(user?.arenaIds || [])[0]
+  const { arenas } = useOwnerData()
   const chart = useChartTheme()
+
+  if (!analytics) return null
 
   const tooltipStyle = {
     background: chart.tooltipBg,
@@ -224,11 +256,10 @@ function OwnerAnalytics() {
 
       <div>
         <h2 className="font-display text-sm text-chalk mb-4">OCCUPANCY BY ARENA</h2>
-        {demoOwner.arenaIds.map((id) => {
-          const arena = getArenaById(id)
+        {arenas.map((arena) => {
           if (!arena) return null
           return (
-            <div key={id} className="flex items-center gap-4 mb-4">
+            <div key={arena.id} className="flex items-center gap-4 mb-4">
               <span className="font-mono text-xs text-mist w-40 truncate">{arena.name}</span>
               <div className="flex-1 h-3 bg-slate rounded-sm overflow-hidden">
                 <div
@@ -246,7 +277,7 @@ function OwnerAnalytics() {
 }
 
 function SlotManager() {
-  const ownerArenas = demoOwner.arenaIds.map(getArenaById).filter(Boolean)
+  const { arenas, loading } = useOwnerData()
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const [blocked, setBlocked] = useState<Set<string>>(new Set())
 
@@ -258,6 +289,8 @@ function SlotManager() {
       return next
     })
   }
+
+  if (loading) return <div className="text-mist">Loading...</div>
 
   return (
     <div>
@@ -276,7 +309,7 @@ function SlotManager() {
             </tr>
           </thead>
           <tbody>
-            {ownerArenas.map(
+            {arenas.map(
               (arena) =>
                 arena && (
                   <tr key={arena.id}>

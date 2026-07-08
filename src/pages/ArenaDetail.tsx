@@ -19,10 +19,8 @@ import { AnimatePresence } from 'framer-motion'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
-import { getArenaBySlug } from '../data/arenas'
-import { getReviewsForArena } from '../data/reviews'
-import { getSlotsForArenaDate } from '../data/slots'
 import { ownerAnalytics } from '../data/analytics'
+import { fetchArenaBySlug, fetchReviewsForArena, fetchSlotsForArenaDate } from '../services/supabaseData'
 import { SportTag } from '../components/ui/SportTag'
 import { SlotGrid } from '../components/ui/SlotGrid'
 import { PeakHoursChart } from '../components/ui/PeakHoursChart'
@@ -58,7 +56,11 @@ const allAmenities = [
 
 export function ArenaDetail() {
   const { slug } = useParams()
-  const arena = getArenaBySlug(slug ?? '')
+  const [arena, setArena] = useState<any>(null)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [daySlots, setDaySlots] = useState<Slot[]>([])
+  const [loading, setLoading] = useState(true)
+
   const [heroImage, setHeroImage] = useState(0)
   const [favourite, setFavourite] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -66,6 +68,39 @@ export function ArenaDetail() {
   const [selectedDay, setSelectedDay] = useState(0)
   const selectedDate = format(days[selectedDay], 'yyyy-MM-dd')
   const { selectSlot, slot, step, setStep } = useBooking()
+
+  useEffect(() => {
+    async function loadArena() {
+      if (!slug) return
+      setLoading(true)
+      const data = await fetchArenaBySlug(slug)
+      if (data) {
+        setArena(data)
+        const arenaReviews = await fetchReviewsForArena(data.id)
+        setReviews(arenaReviews)
+      }
+      setLoading(false)
+    }
+    loadArena()
+  }, [slug])
+
+  useEffect(() => {
+    async function loadSlots() {
+      if (arena) {
+        const slots = await fetchSlotsForArenaDate(arena.id, selectedDate)
+        setDaySlots(slots)
+      }
+    }
+    loadSlots()
+  }, [arena, selectedDate])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-mist">Loading arena...</p>
+      </div>
+    )
+  }
 
   if (!arena) {
     return (
@@ -75,8 +110,6 @@ export function ArenaDetail() {
     )
   }
 
-  const daySlots = getSlotsForArenaDate(arena.id, selectedDate)
-  const reviews = getReviewsForArena(arena.id)
   const analytics = ownerAnalytics.find((a) => a.arenaId === arena.id) ?? ownerAnalytics[0]
 
   const handleSlotSelect = (s: Slot) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { format, parseISO, isFuture } from 'date-fns'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
@@ -6,11 +6,11 @@ import { StatCard } from '../components/ui/StatCard'
 import { HomeTab } from '../components/sections/HomeTab'
 import { SportTag } from '../components/ui/SportTag'
 import { useAuth } from '../context/AuthContext'
-import { getPlayerBookings } from '../data/bookings'
-import { getArenaById } from '../data/arenas'
 import { demoPlayer } from '../data/users'
 import { formatPKR } from '../utils/formatters'
 import { cn } from '../utils/formatters'
+import { fetchPlayerBookings, fetchArenaById } from '../services/supabaseData'
+import type { Booking, Arena } from '../types'
 
 const links = [
   { to: '/dashboard/player/home', label: 'Home' },
@@ -20,8 +20,40 @@ const links = [
   { to: '/dashboard/player/activity', label: 'Activity' },
 ]
 
+function useDashboardData() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [arenas, setArenas] = useState<Record<string, Arena>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    async function load() {
+      const b = await fetchPlayerBookings(user.id);
+      setBookings(b);
+      
+      const arenaIds = Array.from(new Set(b.map(x => x.arenaId)));
+      const arenaObj: Record<string, Arena> = {};
+      
+      // Load favourite arenas too if we want them, or just use demoPlayer for now
+      // since the DB table for favorites is not fetched.
+      
+      for (const id of arenaIds) {
+        const a = await fetchArenaById(id);
+        if (a) arenaObj[id] = a;
+      }
+      setArenas(arenaObj);
+      setLoading(false);
+    }
+    load();
+  }, [user]);
+
+  return { bookings, arenas, loading };
+}
+
 function Overview() {
-  const bookings = getPlayerBookings('player-1')
+  const { bookings, arenas, loading } = useDashboardData();
+
   const upcoming = bookings.filter(
     (b) => b.status === 'confirmed' && isFuture(parseISO(b.date))
   )
@@ -29,26 +61,30 @@ function Overview() {
   const arenasVisited = new Set(bookings.map((b) => b.arenaId)).size
   const sportCounts: Record<string, number> = {}
   bookings.forEach((b) => {
-    sportCounts[b.sport] = (sportCounts[b.sport] ?? 0) + 1
+    // using sportId as sport name fallback if sport name isn't on booking
+    const sportName = b.sportId || 'Football';
+    sportCounts[sportName] = (sportCounts[sportName] ?? 0) + 1
   })
   const favSport =
     Object.entries(sportCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Football'
 
   const timeline = bookings.slice(0, 5).map((b) => {
-    const arena = getArenaById(b.arenaId)
+    const arena = arenas[b.arenaId]
     return {
       id: b.id,
-      text: `${b.status === 'cancelled' ? 'Cancelled' : 'Booked'} ${arena?.name}`,
-      date: b.bookedAt,
+      text: `${b.status === 'cancelled' ? 'Cancelled' : 'Booked'} ${arena?.name || 'an arena'}`,
+      date: b.date,
       type: b.status === 'cancelled' ? 'cancel' : 'book',
     }
   })
+
+  if (loading) return <div className="text-mist">Loading...</div>
 
   return (
     <div>
       <h1 className="font-display text-display-md text-chalk mb-8">OVERVIEW</h1>
       <div className="grid grid-cols-2 gap-4 mb-10">
-        <StatCard label="Total Bookings" value={demoPlayer.totalBookings} />
+        <StatCard label="Total Bookings" value={bookings.length} />
         <StatCard label="Hours Played" value={hoursPlayed} />
         <StatCard label="Favourite Sport" value={favSport} />
         <StatCard label="Arenas Visited" value={arenasVisited} />
@@ -57,7 +93,7 @@ function Overview() {
       <h2 className="font-display text-xl text-chalk mb-4">UPCOMING BOOKINGS</h2>
       <div className="space-y-3 mb-10">
         {upcoming.slice(0, 3).map((b) => {
-          const arena = getArenaById(b.arenaId)
+          const arena = arenas[b.arenaId]
           return (
             <div key={b.id} className="bg-slate p-4 rounded-sm flex justify-between items-center">
               <div>
@@ -65,7 +101,7 @@ function Overview() {
                 <p className="text-mist text-[13px]">
                   {format(parseISO(b.date), 'd MMM')} · {b.startTime}
                 </p>
-                <SportTag sport={b.sport} className="mt-2" />
+                <SportTag sport={b.sportId || 'Football'} className="mt-2" />
               </div>
               <button type="button" className="text-mist text-sm hover:text-chalk">
                 Cancel
@@ -115,8 +151,8 @@ function Overview() {
 }
 
 function MyBookings() {
+  const { bookings, arenas, loading } = useDashboardData();
   const [tab, setTab] = useState<'All' | 'Upcoming' | 'Completed' | 'Cancelled'>('All')
-  const bookings = getPlayerBookings('player-1')
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
@@ -127,6 +163,8 @@ function MyBookings() {
       return true
     })
   }, [tab, bookings])
+
+  if (loading) return <div className="text-mist">Loading...</div>
 
   return (
     <div>
@@ -145,19 +183,19 @@ function MyBookings() {
       </div>
       <div className="space-y-0">
         {filtered.map((b) => {
-          const arena = getArenaById(b.arenaId)
+          const arena = arenas[b.arenaId]
           return (
             <div
               key={b.id}
               className="grid grid-cols-2 md:grid-cols-6 gap-4 py-4 border-b border-line items-center"
             >
               <span className="font-body text-chalk md:col-span-1">{arena?.name}</span>
-              <SportTag sport={b.sport} size="sm" />
+              <SportTag sport={b.sportId || 'Football'} size="sm" />
               <span className="font-mono text-xs text-mist">
                 {format(parseISO(b.date), 'd MMM')} {b.startTime}
               </span>
               <span className="text-mist text-sm hidden md:block">1 hr</span>
-              <span className="font-mono text-sm">{formatPKR(b.amountPaid)}</span>
+              <span className="font-mono text-sm">{formatPKR(b.price || 0)}</span>
               <span
                 className={cn(
                   'text-xs font-mono uppercase px-2 py-1 rounded-sm w-fit',
@@ -177,9 +215,19 @@ function MyBookings() {
 }
 
 function Favourites() {
-  const favourites = demoPlayer.favoriteArenas
-    .map(getArenaById)
-    .filter(Boolean)
+  const [favourites, setFavourites] = useState<Arena[]>([])
+  
+  useEffect(() => {
+    async function load() {
+      const favs = [];
+      for (const id of demoPlayer.favoriteArenas) {
+        const a = await fetchArenaById(id);
+        if (a) favs.push(a);
+      }
+      setFavourites(favs);
+    }
+    load();
+  }, [])
 
   return (
     <div>
@@ -213,13 +261,16 @@ function Favourites() {
 }
 
 function Activity() {
-  const bookings = getPlayerBookings('player-1')
+  const { bookings, arenas, loading } = useDashboardData();
+
+  if (loading) return <div className="text-mist">Loading...</div>
+
   return (
     <div>
       <h1 className="font-display text-display-md text-chalk mb-6">ACTIVITY</h1>
       <div className="relative pl-6 border-l border-line space-y-8">
         {bookings.map((b) => {
-          const arena = getArenaById(b.arenaId)
+          const arena = arenas[b.arenaId]
           return (
             <div key={b.id} className="relative">
               <span className="absolute -left-[29px] w-3 h-3 rounded-full bg-lime top-1" />
@@ -227,7 +278,7 @@ function Activity() {
                 {b.status === 'completed' ? 'Played at' : 'Booked'} {arena?.name}
               </p>
               <p className="font-mono text-xs text-mist mt-1">
-                {format(parseISO(b.bookedAt), 'd MMM yyyy HH:mm')}
+                {format(parseISO(b.date), 'd MMM yyyy HH:mm')}
               </p>
             </div>
           )
