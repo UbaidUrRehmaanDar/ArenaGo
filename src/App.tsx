@@ -1,26 +1,28 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import { Component, useLayoutEffect, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useLayoutEffect, type ReactNode } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { BookingProvider } from './context/BookingContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { useLenis } from './hooks/useLenis'
 import { MobileBottomNav } from './components/layout/MobileBottomNav'
-import { Landing } from './pages/Landing'
-import { Home } from './pages/Home'
-import { About } from './pages/About'
-import { ArenaListings } from './pages/ArenaListings'
-import { ArenaDetail } from './pages/ArenaDetail'
-import { ArenaSchedule } from './pages/ArenaSchedule'
-import { BookingFlow } from './pages/BookingFlow'
-import { BookingConfirmed } from './pages/BookingConfirmed'
-import { Profile } from './pages/Profile'
-import { Promotions } from './pages/Promotions'
-import { PlayerDashboard } from './pages/PlayerDashboard'
-import { OwnerDashboard } from './pages/OwnerDashboard'
-import { Login } from './pages/Login'
-import { Signup } from './pages/Signup'
 import { Btn } from './components/ui/Btn'
+
+// Lazy-load all pages so each route is a separate chunk
+const Landing        = lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })))
+const Home           = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })))
+const About          = lazy(() => import('./pages/About').then(m => ({ default: m.About })))
+const ArenaListings  = lazy(() => import('./pages/ArenaListings').then(m => ({ default: m.ArenaListings })))
+const ArenaDetail    = lazy(() => import('./pages/ArenaDetail').then(m => ({ default: m.ArenaDetail })))
+const ArenaSchedule  = lazy(() => import('./pages/ArenaSchedule').then(m => ({ default: m.ArenaSchedule })))
+const BookingFlow    = lazy(() => import('./pages/BookingFlow').then(m => ({ default: m.BookingFlow })))
+const BookingConfirmed = lazy(() => import('./pages/BookingConfirmed').then(m => ({ default: m.BookingConfirmed })))
+const Profile        = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })))
+const Promotions     = lazy(() => import('./pages/Promotions').then(m => ({ default: m.Promotions })))
+const PlayerDashboard = lazy(() => import('./pages/PlayerDashboard').then(m => ({ default: m.PlayerDashboard })))
+const OwnerDashboard  = lazy(() => import('./pages/OwnerDashboard').then(m => ({ default: m.OwnerDashboard })))
+const Login          = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
+const Signup         = lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })))
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -55,22 +57,24 @@ function AnimatedRoutes() {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Landing />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/arenas" element={<ArenaListings />} />
-        <Route path="/arenas/:slug" element={<ArenaDetail />} />
-        <Route path="/arenas/:slug/schedule" element={<ArenaSchedule />} />
-        <Route path="/booking" element={<BookingFlow />} />
-        <Route path="/booking/confirmed" element={<BookingConfirmed />} />
-        <Route path="/promotions" element={<Promotions />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/dashboard/player/*" element={<PlayerDashboard />} />
-        <Route path="/dashboard/owner/*" element={<OwnerDashboard />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-      </Routes>
+      <Suspense fallback={<div className="min-h-screen bg-ground" />}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Landing />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/arenas" element={<ArenaListings />} />
+          <Route path="/arenas/:slug" element={<ArenaDetail />} />
+          <Route path="/arenas/:slug/schedule" element={<ArenaSchedule />} />
+          <Route path="/booking" element={<BookingFlow />} />
+          <Route path="/booking/confirmed" element={<BookingConfirmed />} />
+          <Route path="/promotions" element={<Promotions />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard/player/*" element={<PlayerDashboard />} />
+          <Route path="/dashboard/owner/*" element={<OwnerDashboard />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
-import { Bell, CalendarDays, Camera, Heart, MapPin, Pencil, ShieldCheck } from 'lucide-react'
+import { Bell, CalendarDays, Camera, Heart, MapPin, Pencil } from 'lucide-react'
 import { format, isFuture, parseISO } from 'date-fns'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
