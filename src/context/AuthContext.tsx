@@ -76,7 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.user.email,
         role: role === 'player' ? 'customer' : 'owner',
         full_name: name,
-        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+        phone: null,
       })
 
       if (profileError) {

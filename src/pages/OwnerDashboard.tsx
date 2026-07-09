@@ -13,6 +13,8 @@ import { Camera } from 'lucide-react'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { StatCard } from '../components/ui/StatCard'
 import { HomeTab } from '../components/sections/HomeTab'
+import { OwnerBookings as OwnerBookingsPage } from './OwnerBookings'
+import { OwnerCampaigns } from './OwnerCampaigns'
 import { useAuth } from '../context/AuthContext'
 import { getAnalyticsForOwner, heatmapData, HEATMAP_DAYS, HEATMAP_HOURS } from '../data/analytics'
 import { fetchArenaById, uploadArenaImage } from '../services/supabaseData'
@@ -25,6 +27,7 @@ const links = [
   { to: '/dashboard/owner', label: 'Overview' },
   { to: '/dashboard/owner/bookings', label: 'Bookings' },
   { to: '/dashboard/owner/arenas', label: 'Arenas' },
+  { to: '/dashboard/owner/campaigns', label: 'Campaigns' },
   { to: '/dashboard/owner/analytics', label: 'Analytics' },
   { to: '/dashboard/owner/slots', label: 'Slot Manager' },
   { to: '/profile', label: 'Profile' },
@@ -99,28 +102,7 @@ function OwnerOverview() {
 }
 
 function OwnerBookings() {
-  const { user } = useAuth()
-  const analytics = getAnalyticsForOwner(user?.arenaIds || [])[0]
-  if (!analytics) return null
-  return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="font-display text-display-md text-chalk mb-6">BOOKINGS</h1>
-      <div className="space-y-3">
-        {analytics.bookings.trend.map((d) => (
-          <div key={d.date} className="flex items-center gap-3 lg:gap-4">
-            <span className="font-mono text-xs lg:text-sm text-mist w-10 lg:w-12 shrink-0">{d.date}</span>
-            <div className="flex-1 h-3 lg:h-4 bg-slate rounded-sm overflow-hidden min-w-0">
-              <div
-                className="h-full bg-lime"
-                style={{ width: `${(d.count / 45) * 100}%` }}
-              />
-            </div>
-            <span className="font-mono text-xs lg:text-sm text-chalk w-8 shrink-0">{d.count}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  return <OwnerBookingsPage />
 }
 
 function OwnerArenas() {
@@ -401,6 +383,7 @@ export function OwnerDashboard() {
         <Route path="home" element={<HomeTab />} />
         <Route path="bookings" element={<OwnerBookings />} />
         <Route path="arenas" element={<OwnerArenas />} />
+        <Route path="campaigns" element={<OwnerCampaigns />} />
         <Route path="analytics" element={<OwnerAnalytics />} />
         <Route path="slots" element={<SlotManager />} />
       </Route>

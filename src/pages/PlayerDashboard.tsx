@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { format, parseISO, isFuture } from 'date-fns'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { StatCard } from '../components/ui/StatCard'
 import { HomeTab } from '../components/sections/HomeTab'
+import { PlayerBookings as PlayerBookingsPage } from './PlayerBookings'
 import { SportTag } from '../components/ui/SportTag'
 import { useAuth } from '../context/AuthContext'
 import { demoPlayer } from '../data/users'
-import { formatPKR } from '../utils/formatters'
 import { cn } from '../utils/formatters'
 import { fetchPlayerBookings, fetchArenaById, cancelSupabaseBooking, fetchFavoritesForUser } from '../services/supabaseData'
 import type { Booking, Arena, SportType } from '../types'
@@ -166,67 +166,7 @@ function Overview() {
 }
 
 function MyBookings() {
-  const { bookings, arenas, loading } = useDashboardData();
-  const [tab, setTab] = useState<'All' | 'Upcoming' | 'Completed' | 'Cancelled'>('All')
-
-  const filtered = useMemo(() => {
-    return bookings.filter((b) => {
-      if (tab === 'Upcoming')
-        return b.status === 'confirmed' && isFuture(parseISO(b.date))
-      if (tab === 'Completed') return b.status === 'completed'
-      if (tab === 'Cancelled') return b.status === 'cancelled'
-      return true
-    })
-  }, [tab, bookings])
-
-  if (loading) return <div className="text-mist">Loading...</div>
-
-  return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="font-display text-display-md text-chalk mb-6">MY BOOKINGS</h1>
-      <div className="flex gap-2 mb-6 lg:mb-8 overflow-x-auto pb-2">
-        {(['All', 'Upcoming', 'Completed', 'Cancelled'] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={cn('btn-chip', tab === t ? 'btn-chip-active' : 'btn-chip-inactive')}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div className="space-y-0">
-        {filtered.map((b) => {
-          const arena = arenas[b.arenaId]
-          return (
-            <div
-              key={b.id}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 py-4 border-b border-line items-center"
-            >
-              <span className="font-body text-chalk md:col-span-1 truncate">{arena?.name}</span>
-              <SportTag sport={(b.sportId || 'Football') as SportType} size="sm" />
-              <span className="font-mono text-xs text-mist">
-                {format(parseISO(b.date), 'd MMM')} {b.startTime}
-              </span>
-              <span className="text-mist text-sm hidden lg:block">1 hr</span>
-              <span className="font-mono text-sm">{formatPKR(b.price || 0)}</span>
-              <span
-                className={cn(
-                  'text-xs font-mono uppercase px-2 py-1 rounded-sm w-fit',
-                  b.status === 'confirmed' && 'bg-lime/20 text-lime',
-                  b.status === 'completed' && 'bg-slate text-mist',
-                  b.status === 'cancelled' && 'bg-booked/20 text-booked'
-                )}
-              >
-                {b.status}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+  return <PlayerBookingsPage />
 }
 
 function Favourites() {

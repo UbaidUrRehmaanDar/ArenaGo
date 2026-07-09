@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, MapPin, Phone } from 'lucide-react'
+import { ArrowLeft, Phone } from 'lucide-react'
 import { Btn } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
@@ -11,7 +11,6 @@ export function CompleteProfile() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [phone, setPhone] = useState('')
-  const [location, setLocation] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -23,7 +22,7 @@ export function CompleteProfile() {
       return
     }
 
-    if (!phone || !location) {
+    if (!phone) {
       setError('Please fill in all fields.')
       return
     }
@@ -34,8 +33,7 @@ export function CompleteProfile() {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          phone_number: phone,
-          location: location,
+          phone: phone,
         })
         .eq('id', user.id)
 
@@ -49,7 +47,7 @@ export function CompleteProfile() {
       if (user.role === 'owner') {
         navigate('/dashboard/owner')
       } else {
-        navigate('/')
+        navigate('/home')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
@@ -67,7 +65,7 @@ export function CompleteProfile() {
     if (user.role === 'owner') {
       navigate('/dashboard/owner')
     } else {
-      navigate('/')
+      navigate('/home')
     }
   }
 
@@ -93,7 +91,7 @@ export function CompleteProfile() {
           <p className="text-[11px] text-lime font-mono uppercase tracking-[0.2em]">Almost there</p>
           <h1 className="font-display text-display-md text-chalk mt-2">COMPLETE YOUR PROFILE</h1>
           <p className="text-mist text-sm mt-3">
-            Add your phone number and location to help us personalize your experience.
+            Add your phone number to help us personalize your experience.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -107,19 +105,6 @@ export function CompleteProfile() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+92 300 1234567"
-                className="w-full bg-slate text-chalk px-4 py-3 rounded-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body"
-              />
-            </div>
-            <div>
-              <label className="text-[13px] text-mist block mb-2 flex items-center gap-2">
-                <MapPin size={14} />
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Lahore, Pakistan"
                 className="w-full bg-slate text-chalk px-4 py-3 rounded-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body"
               />
             </div>

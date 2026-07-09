@@ -4,22 +4,15 @@ import { ArrowLeft } from 'lucide-react'
 import { Btn } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
-import { cn } from '../utils/formatters'
 import { AuthSidebar } from '../components/layout/AuthSidebar'
 
 export function Login() {
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState<'player' | 'owner'>('player')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isErrorRed, setIsErrorRed] = useState(false)
-
-  const switchRole = (r: 'player' | 'owner') => {
-    setRole(r)
-    setError('')
-  }
 
   const triggerErrorAnimation = () => {
     setIsErrorRed(true)
@@ -30,7 +23,15 @@ export function Login() {
     e.preventDefault()
     const ok = await login(email, password)
     if (ok) {
-      navigate(role === 'owner' ? '/dashboard/owner/home' : '/dashboard/player/home')
+      // Navigate based on actual user role from database
+      // Use a small delay to ensure user state is updated
+      setTimeout(() => {
+        if (user?.role === 'owner') {
+          navigate('/dashboard/owner')
+        } else {
+          navigate('/home')
+        }
+      }, 100)
     } else {
       setError('Invalid email or password.')
       triggerErrorAnimation()
@@ -58,22 +59,6 @@ export function Login() {
         <div className="w-full max-w-md">
           <p className="text-[11px] text-lime font-mono uppercase tracking-[0.2em]">Welcome back</p>
           <h1 className="font-display text-display-md text-chalk mt-2">LOG IN TO ARENAGO</h1>
-
-          <div className="flex gap-2 mt-8">
-            {(['player', 'owner'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => switchRole(r)}
-                className={cn(
-                  'px-4 py-2 rounded-full text-[13px] font-body capitalize',
-                  role === r ? 'bg-lime text-on-lime' : 'bg-slate text-mist'
-                )}
-              >
-                {r === 'player' ? 'Player' : 'Arena Owner'}
-              </button>
-            ))}
-          </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>

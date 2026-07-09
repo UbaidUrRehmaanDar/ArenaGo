@@ -340,6 +340,7 @@ export function Profile() {
                     type="text"
                     value={editCity}
                     onChange={(e) => setEditCity(e.target.value)}
+                    autoComplete="address-level2"
                     className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
                     placeholder="e.g. Lahore"
                   />
