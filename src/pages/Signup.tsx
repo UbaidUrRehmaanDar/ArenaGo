@@ -24,7 +24,7 @@ export function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name || !email || !password) {
       setError('Please fill in all fields.')
       triggerErrorAnimation()
@@ -33,7 +33,8 @@ export function Signup() {
 
     const { success, error: signupError } = await signup(email, password, role, name)
     if (success) {
-      navigate('/login')
+      // Auto-login after signup and navigate to profile completion
+      navigate('/complete-profile')
     } else {
       setError(signupError || 'Unknown error occurred.')
       triggerErrorAnimation()
@@ -91,6 +92,7 @@ export function Signup() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
+                autoComplete="name"
                 className="w-full bg-slate text-chalk px-4 py-3 rounded-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body"
               />
             </div>

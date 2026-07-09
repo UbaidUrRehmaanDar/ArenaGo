@@ -6,6 +6,7 @@ import { ThemeToggle } from '../ui/ThemeToggle'
 import { PillNav } from './PillNav'
 import { cn } from '../../utils/formatters'
 import { ArenaGoLogo } from '../ui/ArenaGoLogo'
+import { useAuth } from '../../context/AuthContext'
 
 interface NavbarProps {
   transparent?: boolean
@@ -16,10 +17,10 @@ const NAV_LINKS = [
   { href: '/promotions',      label: 'Promotions' },
   { href: '/#how-it-works',   label: 'How It Works' },
   { href: '/dashboard/owner', label: 'For Owners' },
-  { href: '/login',           label: 'Log In' },
 ]
 
 export function Navbar({ transparent = false }: NavbarProps) {
+  const { user, logout } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
@@ -105,12 +106,35 @@ export function Navbar({ transparent = false }: NavbarProps) {
           {/* ── Desktop right actions ─────────────────────────────────── */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            <Link
-              to="/login"
-              className="text-[14px] text-chalk font-body font-semibold hover:text-lime transition-colors"
-            >
-              Log In
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  to={user.role === 'owner' ? '/dashboard/owner' : '/dashboard/player'}
+                  className="text-[14px] text-chalk font-body font-semibold hover:text-lime transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  className="text-[14px] text-mist font-body font-semibold hover:text-chalk transition-colors"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-[14px] text-chalk font-body font-semibold hover:text-lime transition-colors"
+                >
+                  Log In
+                </Link>
+                <BtnLink to="/signup" className="text-[13px] px-5 py-2">
+                  Sign Up
+                </BtnLink>
+              </>
+            )}
             <BtnLink to="/arenas" className="text-[13px] px-5 py-2">
               Book Now
             </BtnLink>
@@ -129,6 +153,14 @@ export function Navbar({ transparent = false }: NavbarProps) {
               onToggle={setMobileOpen}
               forceClose={!mobileOpen}
             />
+            {user && (
+              <Link
+                to={user.role === 'owner' ? '/dashboard/owner' : '/dashboard/player'}
+                className="text-lime text-sm font-semibold"
+              >
+                Dashboard
+              </Link>
+            )}
           </div>
 
         </nav>

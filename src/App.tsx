@@ -23,6 +23,7 @@ const PlayerDashboard = lazy(() => import('./pages/PlayerDashboard').then(m => (
 const OwnerDashboard  = lazy(() => import('./pages/OwnerDashboard').then(m => ({ default: m.OwnerDashboard })))
 const Login          = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
 const Signup         = lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })))
+const CompleteProfile = lazy(() => import('./pages/CompleteProfile').then(m => ({ default: m.CompleteProfile })))
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -73,6 +74,7 @@ function AnimatedRoutes() {
           <Route path="/dashboard/owner/*" element={<OwnerDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
         </Routes>
       </Suspense>
     </AnimatePresence>

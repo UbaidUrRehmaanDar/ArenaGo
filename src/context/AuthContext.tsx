@@ -83,6 +83,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to create profile:', profileError)
       }
 
+      // Auto-login after signup
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (loginError) {
+        console.error('Auto-login failed:', loginError)
+        // Still return success since signup worked
+        return { success: true }
+      }
+
+      if (loginData.user) {
+        const profile = await fetchUserProfile(loginData.user.id)
+        setUser(profile)
+      }
+
       return { success: true }
     } catch (err: any) {
       console.error(err)
