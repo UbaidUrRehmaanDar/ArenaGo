@@ -4,7 +4,6 @@ import { ArrowLeft } from 'lucide-react'
 import { Btn } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
-import { DEMO_CREDENTIALS } from '../data/users'
 import { cn } from '../utils/formatters'
 import { AuthSidebar } from '../components/layout/AuthSidebar'
 
@@ -12,20 +11,13 @@ export function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [role, setRole] = useState<'player' | 'owner'>('player')
-  const [email, setEmail] = useState(DEMO_CREDENTIALS.player.email)
-  const [password, setPassword] = useState(DEMO_CREDENTIALS.player.password)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isErrorRed, setIsErrorRed] = useState(false)
 
   const switchRole = (r: 'player' | 'owner') => {
     setRole(r)
-    if (r === 'player') {
-      setEmail(DEMO_CREDENTIALS.player.email)
-      setPassword(DEMO_CREDENTIALS.player.password)
-    } else {
-      setEmail(DEMO_CREDENTIALS.owner.email)
-      setPassword(DEMO_CREDENTIALS.owner.password)
-    }
     setError('')
   }
 
