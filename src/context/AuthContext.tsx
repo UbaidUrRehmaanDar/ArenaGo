@@ -6,6 +6,7 @@ import type { AuthUser } from '../types'
 interface AuthContextValue {
   user: AuthUser | null
   login: (email: string, password: string) => Promise<boolean>
+  signup: (email: string, password: string, role: 'player' | 'owner', name: string) => Promise<{success: boolean, error?: string}>
   logout: () => Promise<void>
   loading: boolean
 }
@@ -60,13 +61,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const signup = async (email: string, password: string, role: 'player' | 'owner', name: string): Promise<{success: boolean, error?: string}> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      if (error) return { success: false, error: error.message }
+      if (!data.user) return { success: false, error: 'Unknown error during sign up.' }
+
+      // Insert profile into public.profiles table
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        email: data.user.email,
+        role: role === 'player' ? 'customer' : 'owner',
+        full_name: name,
+        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+      })
+
+      if (profileError) {
+        console.error('Failed to create profile:', profileError)
+      }
+
+      return { success: true }
+    } catch (err: any) {
+      console.error(err)
+      return { success: false, error: err.message || 'An error occurred.' }
+    }
+  }
+
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
       {!loading ? children : <div className="min-h-screen flex items-center justify-center bg-ground text-chalk">Loading...</div>}
     </AuthContext.Provider>
   )

@@ -89,6 +89,8 @@ export function Home() {
         { label: 'Saved Arenas', value: '3' },
       ]
 
+  const scheduleLink = featuredArenas[0] ? `/arenas/${featuredArenas[0].slug}/schedule` : '/arenas'
+
   if (!user) return <Navigate to="/login" replace />
 
   return (
@@ -119,6 +121,9 @@ export function Home() {
                 </BtnLink>
                 <BtnLink to="/arenas" variant="outline" className="px-5 py-3 text-sm">
                   Explore Arenas
+                </BtnLink>
+                <BtnLink to="/promotions" variant="outline" className="px-5 py-3 text-sm">
+                  Live Offers
                 </BtnLink>
               </div>
             </div>
@@ -181,8 +186,9 @@ export function Home() {
                 {[
                   { icon: CalendarClock, title: 'Book A Slot', to: '/booking', desc: 'Find next available timings fast.' },
                   { icon: Compass, title: 'Browse Arenas', to: '/arenas', desc: 'Filter by area, sport, and budget.' },
-                  { icon: Trophy, title: 'Player Dashboard', to: '/dashboard/player', desc: 'Track your bookings and streaks.' },
-                  { icon: Sparkles, title: 'Owner Dashboard', to: '/dashboard/owner', desc: 'Manage courts and analytics.' },
+                  { icon: Trophy, title: 'My Profile', to: '/profile', desc: 'See your account, saves, and alerts.' },
+                  { icon: Sparkles, title: 'Live Offers', to: '/promotions', desc: 'Open the current promotions feed.' },
+                  { icon: Compass, title: 'Arena Schedule', to: scheduleLink, desc: 'Check slot pressure before you book.' },
                 ].map((item) => (
                   <Link
                     key={item.title}

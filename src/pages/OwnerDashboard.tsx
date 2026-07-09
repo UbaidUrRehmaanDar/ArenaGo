@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import {
   Line,
@@ -9,12 +9,13 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import { Camera } from 'lucide-react'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { StatCard } from '../components/ui/StatCard'
 import { HomeTab } from '../components/sections/HomeTab'
 import { useAuth } from '../context/AuthContext'
 import { getAnalyticsForOwner, heatmapData, HEATMAP_DAYS, HEATMAP_HOURS } from '../data/analytics'
-import { fetchArenaById } from '../services/supabaseData'
+import { fetchArenaById, uploadArenaImage } from '../services/supabaseData'
 import { useChartTheme } from '../hooks/useChartTheme'
 import { cn, formatPKR } from '../utils/formatters'
 import type { Arena } from '../types'
@@ -26,6 +27,7 @@ const links = [
   { to: '/dashboard/owner/arenas', label: 'Arenas' },
   { to: '/dashboard/owner/analytics', label: 'Analytics' },
   { to: '/dashboard/owner/slots', label: 'Slot Manager' },
+  { to: '/profile', label: 'Profile' },
 ]
 
 const PIE_COLORS = ['#C8FF00', '#FF9500', '#00B4D8', '#FF6B35', '#C39BD3']
@@ -123,7 +125,19 @@ function OwnerBookings() {
 
 function OwnerArenas() {
   const { arenas, loading } = useOwnerData()
-  
+  const [arenaImages, setArenaImages] = useState<Record<string, string>>({})
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const handleImageChange = async (arenaId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading((prev) => ({ ...prev, [arenaId]: true }))
+    const newUrl = await uploadArenaImage(arenaId, file)
+    if (newUrl) setArenaImages((prev) => ({ ...prev, [arenaId]: newUrl }))
+    setUploading((prev) => ({ ...prev, [arenaId]: false }))
+  }
+
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
@@ -134,10 +148,37 @@ function OwnerArenas() {
           (arena) =>
             arena && (
               <div key={arena.id} className="bg-slate p-6 rounded-sm flex gap-6">
-                <img
-                  src={arena.images[0]}
-                  alt=""
-                  className="w-32 h-24 object-cover rounded-sm"
+                {/* Arena image with upload overlay */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRefs.current[arena.id]?.click()}
+                  className="relative group w-32 h-24 shrink-0 rounded-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-lime"
+                  aria-label="Upload arena photo"
+                >
+                  <img
+                    src={arenaImages[arena.id] ?? arena.images[0]}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  <span className={cn(
+                    'absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ground/70 transition-opacity',
+                    uploading[arena.id] ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  )}>
+                    {uploading[arena.id]
+                      ? <span className="text-[10px] font-mono text-lime">Uploading…</span>
+                      : <>
+                          <Camera size={16} className="text-chalk" />
+                          <span className="text-[10px] font-mono text-chalk">Change photo</span>
+                        </>
+                    }
+                  </span>
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={(el) => { fileInputRefs.current[arena.id] = el }}
+                  onChange={(e) => handleImageChange(arena.id, e)}
                 />
                 <div className="flex-1">
                   <p className="font-display text-2xl">{arena.name}</p>

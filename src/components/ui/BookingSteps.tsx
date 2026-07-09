@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useBooking } from '../../context/BookingContext'
-import { updateSlotStatus } from '../../data/slots'
+import { createSupabaseBooking } from '../../services/supabaseData'
 import { formatPKR, formatDate, formatTime } from '../../utils/formatters'
 import { useAuth } from '../../context/AuthContext'
 import { demoPlayer } from '../../data/users'
 import { Btn } from './Btn'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface BookingStepsProps {
   open: boolean
@@ -49,6 +49,7 @@ function Checkmark() {
 export function BookingSteps({ open, onClose }: BookingStepsProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [bookingError, setBookingError] = useState('')
   const {
     step,
     slot,
@@ -57,17 +58,35 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
     startConfirm,
     completeBooking,
     resetBooking,
+    setStep,
   } = useBooking()
 
   useEffect(() => {
-    if (step === 'confirming' && slot) {
-      updateSlotStatus(slot.id, 'booked')
-      const timer = setTimeout(() => {
-        completeBooking()
-      }, 1500)
-      return () => clearTimeout(timer)
+    if (step === 'confirming' && slot && user) {
+      const activeUser = user
+      const activeSlot = slot
+      async function makeBooking() {
+        setBookingError('')
+        const res = await createSupabaseBooking({
+          playerId: activeUser.id,
+          arenaId: activeSlot.arenaId,
+          slotId: activeSlot.id,
+          courtId: activeSlot.courtId || '',
+          date: activeSlot.date,
+          startTime: activeSlot.startTime,
+          endTime: activeSlot.endTime,
+          price: activeSlot.price,
+        })
+        if (res.success) {
+          completeBooking()
+        } else {
+          setBookingError(res.error || 'Failed to confirm booking.')
+          setStep('selected')
+        }
+      }
+      makeBooking()
     }
-  }, [step, slot, completeBooking])
+  }, [step, slot, user, completeBooking, setStep])
 
   if (!open) return null
 
@@ -117,6 +136,7 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
                 <p className="font-mono text-xs text-mist">{playerEmail}</p>
               </div>
             </div>
+            {bookingError && <p className="text-booked text-sm mb-4">{bookingError}</p>}
             <Btn onClick={startConfirm} className="w-full py-3">
               Confirm Booking
             </Btn>

@@ -27,7 +27,7 @@ const extraFilters = ['Available Now', 'Peak Hours', 'Under PKR 1500']
 export function ArenaListings() {
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(searchParams.get('q') || '')
   const [sort, setSort] = useState<SortValue>('popular')
   const [sport, setSport] = useState<SportType | 'All Sports'>(
     (searchParams.get('sport') as SportType) || 'All Sports'
@@ -99,7 +99,7 @@ export function ArenaListings() {
               FIND YOUR ARENA{' '}
               <span className="text-lime">IN LAHORE</span>
             </h1>
-            <div className="flex mt-6 max-w-2xl">
+            <form onSubmit={(e) => e.preventDefault()} className="flex mt-6 max-w-2xl">
               <input
                 type="text"
                 value={search}
@@ -107,10 +107,10 @@ export function ArenaListings() {
                 placeholder="Search by name, sport, or area..."
                 className="flex-1 bg-slate text-chalk px-4 py-3 rounded-l-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body text-[15px]"
               />
-              <Btn type="button" shape="attached-right" className="px-6 py-3">
+              <Btn type="submit" shape="attached-right" className="px-6 py-3">
                 Search
               </Btn>
-            </div>
+            </form>
             <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
               {sportFilters.map((s) => (
                 <button
@@ -146,7 +146,7 @@ export function ArenaListings() {
               ))}
             </div>
             <div className="flex justify-between items-center mt-6">
-              <p className="text-[13px] text-mist">{filtered.length} arenas found</p>
+              <p className="font-mono text-sm uppercase tracking-wider text-lime">{filtered.length} arenas found</p>
               <SortDropdown value={sort} onChange={setSort} />
             </div>
           </header>

@@ -9,8 +9,8 @@ import { useAuth } from '../context/AuthContext'
 import { demoPlayer } from '../data/users'
 import { formatPKR } from '../utils/formatters'
 import { cn } from '../utils/formatters'
-import { fetchPlayerBookings, fetchArenaById } from '../services/supabaseData'
-import type { Booking, Arena } from '../types'
+import { fetchPlayerBookings, fetchArenaById, cancelSupabaseBooking, fetchFavoritesForUser } from '../services/supabaseData'
+import type { Booking, Arena, SportType } from '../types'
 
 const links = [
   { to: '/dashboard/player/home', label: 'Home' },
@@ -18,6 +18,7 @@ const links = [
   { to: '/dashboard/player/bookings', label: 'My Bookings' },
   { to: '/dashboard/player/favourites', label: 'Favourite Arenas' },
   { to: '/dashboard/player/activity', label: 'Activity' },
+  { to: '/profile', label: 'Profile' },
 ]
 
 function useDashboardData() {
@@ -25,18 +26,19 @@ function useDashboardData() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [arenas, setArenas] = useState<Record<string, Arena>>({});
   const [loading, setLoading] = useState(true);
+  const [trigger, setTrigger] = useState(0);
+
+  const reload = () => setTrigger(prev => prev + 1);
 
   useEffect(() => {
     if (!user) return;
+    const userId = user.id;
     async function load() {
-      const b = await fetchPlayerBookings(user.id);
+      const b = await fetchPlayerBookings(userId);
       setBookings(b);
       
       const arenaIds = Array.from(new Set(b.map(x => x.arenaId)));
       const arenaObj: Record<string, Arena> = {};
-      
-      // Load favourite arenas too if we want them, or just use demoPlayer for now
-      // since the DB table for favorites is not fetched.
       
       for (const id of arenaIds) {
         const a = await fetchArenaById(id);
@@ -46,13 +48,13 @@ function useDashboardData() {
       setLoading(false);
     }
     load();
-  }, [user]);
+  }, [user, trigger]);
 
-  return { bookings, arenas, loading };
+  return { bookings, arenas, loading, reload };
 }
 
 function Overview() {
-  const { bookings, arenas, loading } = useDashboardData();
+  const { bookings, arenas, loading, reload } = useDashboardData();
 
   const upcoming = bookings.filter(
     (b) => b.status === 'confirmed' && isFuture(parseISO(b.date))
@@ -78,6 +80,15 @@ function Overview() {
     }
   })
 
+  const handleCancel = async (bookingId: string, slotId?: string) => {
+    const success = await cancelSupabaseBooking(bookingId, slotId)
+    if (success) {
+      reload()
+    } else {
+      alert('Failed to cancel booking.')
+    }
+  }
+
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
@@ -101,9 +112,13 @@ function Overview() {
                 <p className="text-mist text-[13px]">
                   {format(parseISO(b.date), 'd MMM')} · {b.startTime}
                 </p>
-                <SportTag sport={b.sportId || 'Football'} className="mt-2" />
+                <SportTag sport={(b.sportId || 'Football') as SportType} className="mt-2" />
               </div>
-              <button type="button" className="text-mist text-sm hover:text-chalk">
+              <button 
+                type="button" 
+                onClick={() => handleCancel(b.id, b.timeSlotId)}
+                className="text-mist text-sm hover:text-chalk"
+              >
                 Cancel
               </button>
             </div>
@@ -190,7 +205,7 @@ function MyBookings() {
               className="grid grid-cols-2 md:grid-cols-6 gap-4 py-4 border-b border-line items-center"
             >
               <span className="font-body text-chalk md:col-span-1">{arena?.name}</span>
-              <SportTag sport={b.sportId || 'Football'} size="sm" />
+              <SportTag sport={(b.sportId || 'Football') as SportType} size="sm" />
               <span className="font-mono text-xs text-mist">
                 {format(parseISO(b.date), 'd MMM')} {b.startTime}
               </span>
@@ -215,19 +230,18 @@ function MyBookings() {
 }
 
 function Favourites() {
+  const { user } = useAuth()
   const [favourites, setFavourites] = useState<Arena[]>([])
   
   useEffect(() => {
+    if (!user) return
+    const userId = user.id
     async function load() {
-      const favs = [];
-      for (const id of demoPlayer.favoriteArenas) {
-        const a = await fetchArenaById(id);
-        if (a) favs.push(a);
-      }
-      setFavourites(favs);
+      const favs = await fetchFavoritesForUser(userId)
+      setFavourites(favs)
     }
-    load();
-  }, [])
+    load()
+  }, [user])
 
   return (
     <div>

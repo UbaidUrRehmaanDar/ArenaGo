@@ -2,7 +2,7 @@
 
 > Book your court. Show up and play.
 
-A sports arena booking platform MVP for Pakistan — connecting players with football turfs, cricket nets, badminton halls, basketball courts, and more in Lahore. Built as a frontend-only prototype with hardcoded mock data.
+A sports arena booking platform for Pakistan — connecting players with football turfs, cricket nets, badminton halls, basketball courts, and more in Lahore.
 
 **Live demo:** [arenago.vercel.app](https://arenago.vercel.app)
 

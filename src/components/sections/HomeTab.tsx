@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { format, isFuture, parseISO } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
@@ -8,20 +8,36 @@ import { StatCard } from '../ui/StatCard'
 import { SportTag } from '../ui/SportTag'
 import { useAuth } from '../../context/AuthContext'
 import { activityFeed } from '../../data/activity'
-import { arenas } from '../../data/arenas'
-import { getPlayerBookings } from '../../data/bookings'
 import { demoOwner } from '../../data/users'
 import { formatPKR } from '../../utils/formatters'
+import type { SportType } from '../../types'
+import { fetchArenas, fetchPlayerBookings } from '../../services/supabaseData'
+import type { Arena, Booking } from '../../types'
 
 export function HomeTab() {
   const { user } = useAuth()
+  const [allArenas, setAllArenas] = useState<Arena[]>([])
+  const [playerBookings, setPlayerBookings] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const featuredArenas = useMemo(() => arenas.filter((a) => a.isFeatured).slice(0, 4), [])
+  useEffect(() => {
+    async function loadData() {
+      const data = await fetchArenas()
+      setAllArenas(data)
+      if (user?.id && user.role === 'player') {
+        const bookings = await fetchPlayerBookings(user.id)
+        setPlayerBookings(bookings)
+      }
+      setLoading(false)
+    }
+    loadData()
+  }, [user])
+
+  const featuredArenas = useMemo(() => allArenas.filter((a) => a.isFeatured).slice(0, 4), [allArenas])
   const trendingArenas = useMemo(
-    () => [...arenas].sort((a, b) => b.occupancyRate - a.occupancyRate).slice(0, 3),
-    []
+    () => [...allArenas].sort((a, b) => b.occupancyRate - a.occupancyRate).slice(0, 3),
+    [allArenas]
   )
-  const playerBookings = useMemo(() => getPlayerBookings('player-1'), [])
   const upcomingBookings = useMemo(
     () =>
       playerBookings
@@ -30,8 +46,8 @@ export function HomeTab() {
     [playerBookings]
   )
   const ownerArenas = useMemo(
-    () => arenas.filter((arena) => demoOwner.arenaIds.includes(arena.id)),
-    []
+    () => allArenas.filter((arena) => user?.arenaIds?.includes(arena.id)),
+    [allArenas, user]
   )
 
   const role = user?.role ?? 'player'
@@ -42,9 +58,9 @@ export function HomeTab() {
           { label: 'Owned Arenas', value: ownerArenas.length.toString() },
           {
             label: 'Avg Occupancy',
-            value: `${Math.round(
+            value: ownerArenas.length > 0 ? `${Math.round(
               ownerArenas.reduce((acc, arena) => acc + arena.occupancyRate, 0) / ownerArenas.length
-            )}%`,
+            )}%` : '0%',
           },
           { label: 'Revenue (Demo)', value: formatPKR(demoOwner.totalRevenue) },
         ]
@@ -53,6 +69,8 @@ export function HomeTab() {
           { label: 'Preferred Sport', value: 'Football' },
           { label: 'Saved Arenas', value: '3' },
         ]
+
+  if (loading) return <div className="text-mist p-8">Loading dashboard home...</div>
 
   return (
     <div>
@@ -84,7 +102,7 @@ export function HomeTab() {
           <p className="text-mist text-sm">No upcoming bookings</p>
         )}
         {upcomingBookings.map((b) => {
-          const arena = arenas.find((a) => a.id === b.arenaId)
+          const arena = allArenas.find((a) => a.id === b.arenaId)
           return (
             <div key={b.id} className="bg-slate p-4 rounded-sm flex justify-between items-center">
               <div>
@@ -92,7 +110,7 @@ export function HomeTab() {
                 <p className="text-mist text-[13px]">
                   {format(parseISO(b.date), 'd MMM')} · {b.startTime}
                 </p>
-                <SportTag sport={b.sport} className="mt-2" />
+                <SportTag sport={(b.sportId || 'Football') as SportType} className="mt-2" />
               </div>
             </div>
           )

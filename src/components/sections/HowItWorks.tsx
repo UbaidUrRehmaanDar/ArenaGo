@@ -131,7 +131,7 @@ export function HowItWorks() {
                         <div className={`flex-1 h-1 ${step < 3 ? 'bg-lime' : 'bg-line'}`} />
                       </div>
                     ))}
-                    <p className="text-mist font-body">Payment details (MVP: skipped)</p>
+                    <p className="text-mist font-body">Payment details (coming soon)</p>
                   </div>
                 )}
                 {panel.content === 'play' && (

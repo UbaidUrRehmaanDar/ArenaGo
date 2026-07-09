@@ -13,6 +13,7 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { href: '/arenas',          label: 'Arenas' },
+  { href: '/promotions',      label: 'Promotions' },
   { href: '/#how-it-works',   label: 'How It Works' },
   { href: '/dashboard/owner', label: 'For Owners' },
   { href: '/login',           label: 'Log In' },

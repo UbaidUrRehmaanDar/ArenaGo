@@ -46,13 +46,16 @@ export interface Arena {
 export interface Slot {
   id: string
   arenaId: string
+  courtId?: string
   date: string
   startTime: string
   endTime: string
-  status: SlotStatus
+  status: SlotStatus | 'unavailable'
   price: number
   isPeak: boolean
 }
+
+export interface TimeSlot extends Slot {}
 
 export interface Badge {
   id: string
@@ -85,14 +88,18 @@ export interface Booking {
   id: string
   playerId: string
   arenaId: string
-  slotId: string
+  slotId?: string
+  courtId?: string
+  timeSlotId?: string
+  sportId?: string
   date: string
   startTime: string
   endTime: string
-  sport: SportType
-  amountPaid: number
+  sport?: SportType
+  amountPaid?: number
+  price?: number
   status: BookingStatus
-  bookedAt: string
+  bookedAt?: string
 }
 
 export interface Review {
@@ -100,10 +107,64 @@ export interface Review {
   arenaId: string
   playerId: string
   playerName: string
+  playerAvatar?: string
   rating: number
   comment: string
   date: string
   sport: SportType
+}
+
+export interface ProfileRecord {
+  id: string
+  email: string
+  fullName: string
+  avatarUrl?: string
+  phone?: string
+  role: UserRole
+  cityId?: string
+}
+
+export interface FavoriteRecord {
+  customerId: string
+  arenaId: string
+  createdAt: string
+}
+
+export interface NotificationRecord {
+  id: string
+  userId: string
+  type: string
+  title: string
+  message: string
+  link?: string | null
+  isRead: boolean
+  createdAt: string
+}
+
+export interface PromotionRecord {
+  id: string
+  code: string
+  title: string
+  description: string
+  promotionType?: string
+  value: number
+  arenaId: string
+  minAmount: number
+  maxUses?: number | null
+  usedCount: number
+  startsAt: string
+  expiresAt: string
+  isActive: boolean
+}
+
+export interface OwnerRecord {
+  id: string
+  profileId: string
+  businessName: string
+  businessPhone?: string | null
+  businessEmail?: string | null
+  cnic?: string | null
+  status: string
 }
 
 export interface MonthlyRevenue {

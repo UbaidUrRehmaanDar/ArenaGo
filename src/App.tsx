@@ -11,11 +11,15 @@ import { Home } from './pages/Home'
 import { About } from './pages/About'
 import { ArenaListings } from './pages/ArenaListings'
 import { ArenaDetail } from './pages/ArenaDetail'
+import { ArenaSchedule } from './pages/ArenaSchedule'
 import { BookingFlow } from './pages/BookingFlow'
 import { BookingConfirmed } from './pages/BookingConfirmed'
+import { Profile } from './pages/Profile'
+import { Promotions } from './pages/Promotions'
 import { PlayerDashboard } from './pages/PlayerDashboard'
 import { OwnerDashboard } from './pages/OwnerDashboard'
 import { Login } from './pages/Login'
+import { Signup } from './pages/Signup'
 import { Btn } from './components/ui/Btn'
 
 class ErrorBoundary extends Component<
@@ -57,11 +61,15 @@ function AnimatedRoutes() {
         <Route path="/about" element={<About />} />
         <Route path="/arenas" element={<ArenaListings />} />
         <Route path="/arenas/:slug" element={<ArenaDetail />} />
+        <Route path="/arenas/:slug/schedule" element={<ArenaSchedule />} />
         <Route path="/booking" element={<BookingFlow />} />
         <Route path="/booking/confirmed" element={<BookingConfirmed />} />
+        <Route path="/promotions" element={<Promotions />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/dashboard/player/*" element={<PlayerDashboard />} />
         <Route path="/dashboard/owner/*" element={<OwnerDashboard />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     </AnimatePresence>
   )

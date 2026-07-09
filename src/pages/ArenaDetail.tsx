@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { addDays, format, parseISO } from 'date-fns'
 import {
@@ -26,7 +26,7 @@ import { SlotGrid } from '../components/ui/SlotGrid'
 import { PeakHoursChart } from '../components/ui/PeakHoursChart'
 import { ReviewCard } from '../components/ui/ReviewCard'
 import { BookingSteps } from '../components/ui/BookingSteps'
-import { Btn } from '../components/ui/Btn'
+import { Btn, BtnLink } from '../components/ui/Btn'
 import { useBooking } from '../context/BookingContext'
 import { formatPKR, formatTime } from '../utils/formatters'
 import { cn } from '../utils/formatters'
@@ -88,7 +88,7 @@ export function ArenaDetail() {
     async function loadSlots() {
       if (arena) {
         const slots = await fetchSlotsForArenaDate(arena.id, selectedDate)
-        setDaySlots(slots)
+        setDaySlots(slots as Slot[])
       }
     }
     loadSlots()
@@ -162,7 +162,7 @@ export function ArenaDetail() {
             </div>
           </div>
           <div className="flex gap-1 px-0">
-            {arena.images.slice(0, 4).map((img, i) => (
+            {arena.images.slice(0, 4).map((img: string, i: number) => (
               <button
                 key={img}
                 type="button"
@@ -195,7 +195,7 @@ export function ArenaDetail() {
               {arena.rating} ★ ({arena.reviewCount} reviews)
             </p>
             <div className="flex flex-wrap gap-2 mt-4">
-              {arena.highlights.map((h) => (
+              {arena.highlights.map((h: string) => (
                 <span
                   key={h}
                   className="font-mono text-xs px-3 py-1 bg-slate border border-line text-mist"
@@ -203,6 +203,14 @@ export function ArenaDetail() {
                   {h}
                 </span>
               ))}
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <BtnLink to={`/arenas/${arena.slug}/schedule`} variant="outline" className="px-5 py-3 text-sm">
+                View Schedule
+              </BtnLink>
+              <BtnLink to="/promotions" variant="outline" className="px-5 py-3 text-sm">
+                See Offers
+              </BtnLink>
             </div>
           </div>
 
@@ -316,7 +324,7 @@ export function ArenaDetail() {
                       Confirm Booking
                     </Btn>
                     <p className="font-mono text-[11px] text-mist mt-3 text-center">
-                      No payment required for MVP
+                      No payment required at this time
                     </p>
                   </div>
                 )}

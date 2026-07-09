@@ -28,6 +28,9 @@ export default {
         'display-xl': ['clamp(64px, 10vw, 120px)', { lineHeight: '0.95', letterSpacing: '0.02em' }],
         'display-lg': ['clamp(40px, 6vw, 72px)', { lineHeight: '0.95', letterSpacing: '0.02em' }],
         'display-md': ['clamp(28px, 4vw, 48px)', { lineHeight: '1', letterSpacing: '0.02em' }],
+        'body-sm': ['13px', { lineHeight: '1.6' }],
+        'body-md': ['15px', { lineHeight: '1.65' }],
+        'body-lg': ['18px', { lineHeight: '1.65' }],
       },
       animation: {
         shimmer: 'shimmer 1.5s infinite',
