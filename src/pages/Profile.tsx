@@ -35,7 +35,6 @@ export function Profile() {
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   // Edit profile panel
-  const [editOpen, setEditOpen] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
   const [editCity, setEditCity] = useState('')
@@ -68,6 +67,9 @@ export function Profile() {
       setBookings(bookingData)
       setArenas(arenaData)
       setAvatarUrl(profileData?.avatarUrl || currentUser.avatar)
+      setEditName(profileData?.fullName || currentUser.name || '')
+      setEditPhone(profileData?.phone || '')
+      setEditCity(profileData?.cityId || '')
       setLoading(false)
     }
 
@@ -85,14 +87,6 @@ export function Profile() {
     const newUrl = await uploadAvatar(user.id, file)
     if (newUrl) setAvatarUrl(newUrl)
     setAvatarUploading(false)
-  }
-
-  const openEditPanel = () => {
-    setEditName(profile?.fullName || user?.name || '')
-    setEditPhone(profile?.phone || '')
-    setEditCity(profile?.cityId || '')
-    setEditSuccess(false)
-    setEditOpen(true)
   }
 
   const handleEditSave = async () => {
@@ -114,7 +108,7 @@ export function Profile() {
           : prev
       )
       setEditSuccess(true)
-      setTimeout(() => setEditOpen(false), 800)
+      setTimeout(() => setEditSuccess(false), 2000)
     }
     setEditSaving(false)
   }
@@ -220,17 +214,10 @@ export function Profile() {
                     {profile?.cityId || <span className="text-mist/60 italic">Not set</span>}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={openEditPanel}
-                  className="rounded-2xl border border-lime/40 bg-lime/10 p-4 text-left hover:bg-lime/20 transition-colors group"
-                >
-                  <p className="text-xs uppercase tracking-[0.18em] text-lime font-mono">Edit Profile</p>
-                  <div className="mt-2 flex items-center gap-2 text-chalk text-sm">
-                    <Pencil size={13} className="text-lime" />
-                    <span>Name, phone, city</span>
-                  </div>
-                </button>
+                <div className="rounded-2xl border border-line bg-ground/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Role</p>
+                  <p className="mt-2 text-chalk text-sm md:text-base capitalize">{user.role}</p>
+                </div>
               </div>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
@@ -269,64 +256,36 @@ export function Profile() {
                 <Pencil size={18} className="text-lime shrink-0" />
               </div>
               <div className="mt-5 space-y-4">
-                {/* Name */}
                 <div>
-                  <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
-                    Full Name
-                  </label>
-                  {editOpen ? (
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
-                      placeholder="Your full name"
-                    />
-                  ) : (
-                    <div className="rounded-xl border border-line bg-slate px-4 py-3 text-chalk text-sm">
-                      {profile?.fullName || <span className="text-mist italic">Not set</span>}
-                    </div>
-                  )}
+                  <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                    placeholder="Your full name"
+                  />
                 </div>
-                {/* Phone */}
                 <div>
-                  <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
-                    Phone Number
-                  </label>
-                  {editOpen ? (
-                    <input
-                      type="tel"
-                      value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                      className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
-                      placeholder="+92 300 0000000"
-                    />
-                  ) : (
-                    <div className="rounded-xl border border-line bg-slate px-4 py-3 text-chalk text-sm">
-                      {profile?.phone || <span className="text-mist italic">Not set</span>}
-                    </div>
-                  )}
+                  <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                    placeholder="+92 300 0000000"
+                  />
                 </div>
-                {/* City */}
                 <div>
-                  <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
-                    City
-                  </label>
-                  {editOpen ? (
-                    <input
-                      type="text"
-                      value={editCity}
-                      onChange={(e) => setEditCity(e.target.value)}
-                      className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
-                      placeholder="e.g. Lahore"
-                    />
-                  ) : (
-                    <div className="rounded-xl border border-line bg-slate px-4 py-3 text-chalk text-sm">
-                      {profile?.cityId || <span className="text-mist italic">Not set</span>}
-                    </div>
-                  )}
+                  <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">City</label>
+                  <input
+                    type="text"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                    placeholder="e.g. Lahore"
+                  />
                 </div>
-                {/* Email — read only */}
                 <div>
                   <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
                     Email <span className="normal-case tracking-normal text-mist/50">(cannot be changed)</span>
@@ -335,42 +294,19 @@ export function Profile() {
                     {profile?.email || user.email}
                   </div>
                 </div>
-                {/* Actions */}
-                <div className="pt-1 flex gap-3">
-                  {editOpen ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleEditSave}
-                        disabled={editSaving}
-                        className={cn(
-                          'flex-1 py-3 rounded-xl font-mono text-sm transition-colors',
-                          editSuccess
-                            ? 'bg-lime/30 text-lime'
-                            : 'bg-lime text-on-lime hover:bg-lime/80',
-                          editSaving && 'opacity-60 cursor-not-allowed'
-                        )}
-                      >
-                        {editSaving ? 'Saving…' : editSuccess ? 'Saved ✓' : 'Save Changes'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditOpen(false)}
-                        className="px-5 py-3 rounded-xl font-mono text-sm border border-line text-mist hover:text-chalk transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={openEditPanel}
-                      className="flex items-center gap-2 px-5 py-3 rounded-xl font-mono text-sm bg-slate border border-line text-chalk hover:border-lime/40 hover:text-lime transition-colors"
-                    >
-                      <Pencil size={13} />
-                      Edit Profile
-                    </button>
-                  )}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={handleEditSave}
+                    disabled={editSaving}
+                    className={cn(
+                      'w-full py-3 rounded-xl font-mono text-sm transition-colors',
+                      editSuccess ? 'bg-lime/30 text-lime' : 'bg-lime text-on-lime hover:bg-lime/80',
+                      editSaving && 'opacity-60 cursor-not-allowed'
+                    )}
+                  >
+                    {editSaving ? 'Saving…' : editSuccess ? 'Saved ✓' : 'Save Changes'}
+                  </button>
                 </div>
                 {user.role === 'owner' && ownerRecord && (
                   <div className="rounded-xl border border-line bg-slate p-4 mt-2">
