@@ -4,6 +4,7 @@ import type { Slot } from '../../types'
 interface SlotGridProps {
   slots: Slot[]
   selectedId?: string | null
+  selectedIds?: string[]
   onSelect?: (slot: Slot) => void
   compact?: boolean
   readOnly?: boolean
@@ -12,6 +13,7 @@ interface SlotGridProps {
 export function SlotGrid({
   slots,
   selectedId,
+  selectedIds,
   onSelect,
   compact = false,
   readOnly = false,
@@ -31,7 +33,7 @@ export function SlotGrid({
       )}
       <div className={cn('flex flex-wrap gap-2', compact && 'gap-1.5')}>
         {slots.map((slot) => {
-          const isSelected = selectedId === slot.id
+          const isSelected = selectedIds ? selectedIds.includes(slot.id) : selectedId === slot.id
           const isBooked = slot.status === 'booked' || slot.status === 'blocked'
           const isPending = slot.status === 'pending'
 

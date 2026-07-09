@@ -6,13 +6,14 @@ export type BookingStep = 'idle' | 'selected' | 'confirming' | 'confirmed'
 interface BookingState {
   arenaId: string | null
   arenaName: string | null
-  slot: Slot | null
+  slots: Slot[]
   step: BookingStep
   reference: string | null
 }
 
 interface BookingContextValue extends BookingState {
-  selectSlot: (arenaId: string, arenaName: string, slot: Slot) => void
+  slot: Slot | null
+  selectSlot: (arenaId: string, arenaName: string, slot: Slot) => Slot[]
   clearSlot: () => void
   startConfirm: () => void
   completeBooking: () => void
@@ -23,7 +24,7 @@ interface BookingContextValue extends BookingState {
 const initialState: BookingState = {
   arenaId: null,
   arenaName: null,
-  slot: null,
+  slots: [],
   step: 'idle',
   reference: null,
 }
@@ -34,17 +35,28 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BookingState>(initialState)
 
   const selectSlot = (arenaId: string, arenaName: string, slot: Slot) => {
+    let nextSlots: Slot[] = []
     setState((s) => ({
       ...s,
-      arenaId,
-      arenaName,
-      slot: s.slot?.id === slot.id ? null : slot,
-      step: s.slot?.id === slot.id ? 'idle' : 'selected',
+      slots: (() => {
+        const sameArena = s.arenaId === arenaId || s.slots.length === 0
+        const baseSlots = sameArena ? s.slots : []
+        const exists = baseSlots.some((selected) => selected.id === slot.id)
+        nextSlots = exists
+          ? baseSlots.filter((selected) => selected.id !== slot.id)
+          : [...baseSlots, slot]
+
+        return nextSlots.sort((left, right) => left.startTime.localeCompare(right.startTime))
+      })(),
+      arenaId: nextSlots.length > 0 ? arenaId : null,
+      arenaName: nextSlots.length > 0 ? arenaName : null,
+      step: nextSlots.length > 0 ? 'selected' : 'idle',
       reference: null,
     }))
+    return nextSlots
   }
 
-  const clearSlot = () => setState((s) => ({ ...s, slot: null, step: 'idle' }))
+  const clearSlot = () => setState((s) => ({ ...s, slots: [], step: 'idle', arenaId: null, arenaName: null }))
 
   const startConfirm = () => setState((s) => ({ ...s, step: 'confirming' }))
 
@@ -61,6 +73,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     <BookingContext.Provider
       value={{
         ...state,
+        slot: state.slots[0] ?? null,
         selectSlot,
         clearSlot,
         startConfirm,

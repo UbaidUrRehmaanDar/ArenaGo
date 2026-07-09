@@ -90,13 +90,13 @@ export function About() {
       <div className="relative z-10">
 
         {/* ── Hero ───────────────────────────────────────────────────── */}
-        <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+        <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center pt-20 md:pt-0">
 
           {/* mobile back button */}
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="absolute top-20 left-4 md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-slate/80 border border-line text-chalk"
+            className="absolute top-24 left-4 md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-slate/80 border border-line text-chalk z-20"
             aria-label="Go back"
           >
             <ArrowLeft size={16} />
@@ -135,8 +135,8 @@ export function About() {
         </section>
 
         {/* ── Vision ─────────────────────────────────────────────────── */}
-        <section className="py-28 px-6">
-          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-start">
+        <section className="py-16 md:py-28 px-6">
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 md:gap-16 items-start">
             <motion.div
               initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} viewport={{ once: true }}
@@ -171,18 +171,18 @@ export function About() {
         </section>
 
         {/* ── Values ─────────────────────────────────────────────────── */}
-        <section className="py-24 px-6">
+        <section className="py-16 md:py-24 px-6">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }} viewport={{ once: true }}
-              className="mb-12"
+              className="mb-8 md:mb-12"
             >
               <p className="font-mono text-lime text-[12px] uppercase tracking-[0.2em] mb-3">What We Stand For</p>
               <h2 className="font-display text-display-md text-chalk">OUR VALUES</h2>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
               {VALUES.map(({ icon: Icon, title, body }, i) => (
                 <motion.div
                   key={title}
@@ -202,18 +202,18 @@ export function About() {
         </section>
 
         {/* ── Creators ───────────────────────────────────────────────── */}
-        <section className="py-24 px-6">
+        <section className="py-16 md:py-24 px-6">
           <div className="max-w-5xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }} viewport={{ once: true }}
-              className="mb-14"
+              className="mb-10 md:mb-14"
             >
               <p className="font-mono text-lime text-[12px] uppercase tracking-[0.2em] mb-3">The People</p>
               <h2 className="font-display text-display-md text-chalk">WHO BUILT THIS</h2>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 max-w-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 max-w-2xl mx-auto">
               {CREATORS.map(({ name, title, handle, status, avatarUrl, email, linkedin, github }, i) => (
                 <motion.div
                   key={name}
@@ -247,7 +247,7 @@ export function About() {
         </section>
 
         {/* ── CTA ────────────────────────────────────────────────────── */}
-        <section className="py-32 px-6 text-center">
+        <section className="py-20 md:py-32 px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }} viewport={{ once: true }}

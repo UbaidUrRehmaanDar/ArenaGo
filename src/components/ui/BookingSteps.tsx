@@ -53,6 +53,7 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
   const {
     step,
     slot,
+    slots,
     arenaName,
     reference,
     startConfirm,
@@ -62,36 +63,44 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
   } = useBooking()
 
   useEffect(() => {
-    if (step === 'confirming' && slot && user) {
+    const activeSlots = slots.length > 0 ? slots : slot ? [slot] : []
+    if (step === 'confirming' && activeSlots.length > 0 && user) {
       const activeUser = user
-      const activeSlot = slot
+      const bookingSlots = activeSlots
       async function makeBooking() {
         setBookingError('')
-        const res = await createSupabaseBooking({
-          playerId: activeUser.id,
-          arenaId: activeSlot.arenaId,
-          slotId: activeSlot.id,
-          courtId: activeSlot.courtId || '',
-          date: activeSlot.date,
-          startTime: activeSlot.startTime,
-          endTime: activeSlot.endTime,
-          price: activeSlot.price,
-        })
-        if (res.success) {
+        for (const activeSlot of bookingSlots) {
+          const res = await createSupabaseBooking({
+            playerId: activeUser.id,
+            arenaId: activeSlot.arenaId,
+            slotId: activeSlot.id,
+            courtId: activeSlot.courtId || '',
+            date: activeSlot.date,
+            startTime: activeSlot.startTime,
+            endTime: activeSlot.endTime,
+            price: activeSlot.price,
+          })
+          if (!res.success) {
+            setBookingError(res.error || 'Failed to confirm booking.')
+            setStep('selected')
+            return
+          }
+        }
+        if (bookingSlots.length > 0) {
           completeBooking()
-        } else {
-          setBookingError(res.error || 'Failed to confirm booking.')
-          setStep('selected')
         }
       }
       makeBooking()
     }
-  }, [step, slot, user, completeBooking, setStep])
+  }, [step, slot, slots, user, completeBooking, setStep])
 
   if (!open) return null
 
   const playerName = user?.name ?? demoPlayer.name
   const playerEmail = user?.email ?? demoPlayer.email
+  const activeSlots = slots.length > 0 ? slots : slot ? [slot] : []
+  const bookingTotal = activeSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)
+  const bookingCount = activeSlots.length
 
   return (
     <>
@@ -106,7 +115,7 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
         transition={{ type: 'tween', duration: 0.35 }}
         className="fixed right-0 top-0 z-50 h-full w-full max-w-md bg-turf border-l border-line p-8 overflow-y-auto"
       >
-        {step === 'selected' && slot && (
+        {step === 'selected' && activeSlots.length > 0 && (
           <div>
             <h2 className="font-display text-display-md text-chalk mb-6">CONFIRM BOOKING</h2>
             <div className="space-y-4 mb-8">
@@ -114,21 +123,24 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
                 <p className="text-mist text-[13px] font-body">Arena</p>
                 <p className="font-display text-2xl text-chalk">{arenaName}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-mist text-[13px]">Date</p>
-                  <p className="font-mono text-sm">{formatDate(slot.date)}</p>
-                </div>
-                <div>
-                  <p className="text-mist text-[13px]">Time</p>
-                  <p className="font-mono text-sm">
-                    {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
-                  </p>
+              <div>
+                <p className="text-mist text-[13px] mb-2">Selected slots</p>
+                <div className="space-y-2">
+                  {activeSlots.map((activeSlot) => (
+                    <div key={activeSlot.id} className="flex items-center justify-between gap-3 rounded-sm border border-line bg-ground/40 px-3 py-2">
+                      <p className="font-mono text-sm text-chalk">
+                        {formatDate(activeSlot.date)} · {formatTime(activeSlot.startTime)} – {formatTime(activeSlot.endTime)}
+                      </p>
+                      <p className="font-mono text-lime text-sm">{formatPKR(activeSlot.price)}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
               <div>
-                <p className="text-mist text-[13px]">Price</p>
-                <p className="font-mono text-lime text-lg">{formatPKR(slot.price)}</p>
+                <p className="text-mist text-[13px]">Total price</p>
+                <p className="font-mono text-lime text-lg">
+                  {bookingCount} hr{bookingCount > 1 ? 's' : ''} · {formatPKR(bookingTotal)}
+                </p>
               </div>
               <div className="border-t border-line pt-4">
                 <p className="text-mist text-[13px] mb-2">Player</p>
@@ -146,21 +158,27 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
         {step === 'confirming' && (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
             <div className="w-12 h-12 border-2 border-lime border-t-transparent rounded-full animate-spin" />
-            <p className="font-mono text-mist mt-4 text-sm">Confirming your slot...</p>
+            <p className="font-mono text-mist mt-4 text-sm">Confirming your booking...</p>
           </div>
         )}
 
-        {step === 'confirmed' && slot && (
+        {step === 'confirmed' && activeSlots.length > 0 && (
           <div className="text-center">
             <Checkmark />
             <p className="font-mono text-lime text-sm mb-2">Booking confirmed!</p>
             <p className="font-mono text-mist text-xs mb-6">{reference}</p>
             <div className="text-left space-y-3 mb-8 bg-slate p-4 rounded-sm">
               <p className="font-display text-xl">{arenaName}</p>
-              <p className="font-mono text-sm text-mist">
-                {formatDate(slot.date)} · {formatTime(slot.startTime)}
+              <div className="space-y-2">
+                {activeSlots.map((activeSlot) => (
+                  <p key={activeSlot.id} className="font-mono text-sm text-mist">
+                    {formatDate(activeSlot.date)} · {formatTime(activeSlot.startTime)} - {formatTime(activeSlot.endTime)}
+                  </p>
+                ))}
+              </div>
+              <p className="font-mono text-lime">
+                {bookingCount} hr{bookingCount > 1 ? 's' : ''} · {formatPKR(bookingTotal)}
               </p>
-              <p className="font-mono text-lime">{formatPKR(slot.price)}</p>
             </div>
             <div className="space-y-3">
               <Btn

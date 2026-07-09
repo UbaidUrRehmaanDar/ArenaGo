@@ -89,7 +89,16 @@ export function Navbar({ transparent = false }: NavbarProps) {
 
           {/* ── Desktop links ─────────────────────────────────────────── */}
           <div className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.filter((l) => l.label !== 'Log In').map((link) => (
+            <Link
+              to={user ? '/home' : '/'}
+              className="relative text-[14px] font-body font-semibold text-chalk transition-colors hover:text-lime"
+            >
+              Home
+              {(user ? location.pathname === '/home' : location.pathname === '/') && (
+                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-lime rounded-full" />
+              )}
+            </Link>
+            {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
@@ -177,6 +186,23 @@ export function Navbar({ transparent = false }: NavbarProps) {
 
           {/* nav links */}
           <ul className="p-2 space-y-0.5">
+            <li>
+              <Link
+                to={user ? '/home' : '/'}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'flex items-center justify-between px-4 py-3.5 rounded-xl text-[15px] font-body font-medium transition-colors duration-150',
+                  (user ? location.pathname === '/home' : location.pathname === '/')
+                    ? 'bg-lime/10 text-lime'
+                    : 'text-[rgb(245_240_232)] hover:bg-white/5 hover:text-white'
+                )}
+              >
+                <span>Home</span>
+                {(user ? location.pathname === '/home' : location.pathname === '/') && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-lime shrink-0" />
+                )}
+              </Link>
+            </li>
             {NAV_LINKS.map((link) => {
               const isActive = location.pathname === link.href
               return (

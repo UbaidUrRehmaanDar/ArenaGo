@@ -67,7 +67,7 @@ export function ArenaDetail() {
   const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i))
   const [selectedDay, setSelectedDay] = useState(0)
   const selectedDate = format(days[selectedDay], 'yyyy-MM-dd')
-  const { selectSlot, slot, step, setStep } = useBooking()
+  const { selectSlot, slots: selectedSlots, step, setStep } = useBooking()
 
   useEffect(() => {
     async function loadArena() {
@@ -86,10 +86,9 @@ export function ArenaDetail() {
 
   useEffect(() => {
     async function loadSlots() {
-      if (arena) {
-        const slots = await fetchSlotsForArenaDate(arena.id, selectedDate)
-        setDaySlots(slots as Slot[])
-      }
+      if (!arena) return
+      const slots = await fetchSlotsForArenaDate(arena.id, selectedDate)
+      setDaySlots(slots as Slot[])
     }
     loadSlots()
   }, [arena, selectedDate])
@@ -111,21 +110,23 @@ export function ArenaDetail() {
   }
 
   const analytics = ownerAnalytics.find((a) => a.arenaId === arena.id) ?? ownerAnalytics[0]
+  const selectedTotal = selectedSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)
 
   const handleSlotSelect = (s: Slot) => {
     if (s.status !== 'available') return
-    const isDeselect = slot?.id === s.id
-    selectSlot(arena.id, arena.name, s)
-    if (isDeselect) {
+    const nextSlots = selectSlot(arena.id, arena.name, s)
+    if (nextSlots.length === 0) {
       setDrawerOpen(false)
-    } else {
-      setDrawerOpen(true)
-      setStep('selected')
+      setStep('idle')
+      return
     }
+
+    setDrawerOpen(true)
+    setStep('selected')
   }
 
   const handleConfirm = () => {
-    if (slot) {
+    if (selectedSlots.length > 0) {
       setDrawerOpen(true)
       setStep('selected')
     }
@@ -220,7 +221,6 @@ export function ArenaDetail() {
                 {arena.description}
               </p>
 
-              {/* Mobile booking panel */}
               <div className="lg:hidden bg-slate p-5 rounded-sm border border-line mb-8">
                 <h2 className="font-display text-2xl text-chalk mb-4">BOOK A SLOT</h2>
                 <div className="flex gap-1 overflow-x-auto mb-4 pb-1">
@@ -238,15 +238,31 @@ export function ArenaDetail() {
                     )
                   })}
                 </div>
-                <SlotGrid slots={daySlots} selectedId={slot?.id} onSelect={handleSlotSelect} />
-                {slot && (
+                <SlotGrid
+                  slots={daySlots}
+                  selectedIds={selectedSlots.map((selectedSlot) => selectedSlot.id)}
+                  onSelect={handleSlotSelect}
+                />
+                {selectedSlots.length > 0 && (
                   <div className="mt-5 pt-5 border-t border-line">
-                    <p className="font-mono text-sm text-mist">
-                      {format(parseISO(selectedDate), 'd MMM yyyy')} · {formatTime(slot.startTime)}
-                    </p>
-                    <p className="font-mono text-lime mt-2">
-                      1 hr × {formatPKR(slot.price)} = {formatPKR(slot.price)}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm text-mist">
+                        {format(parseISO(selectedDate), 'd MMM yyyy')} · {selectedSlots.length} slot{selectedSlots.length > 1 ? 's' : ''} selected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSlots.map((selectedSlot) => (
+                          <span
+                            key={selectedSlot.id}
+                            className="font-mono text-[11px] px-2 py-1 rounded-full border border-line text-chalk bg-ground/70"
+                          >
+                            {formatTime(selectedSlot.startTime)}-{formatTime(selectedSlot.endTime)}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="font-mono text-lime mt-2">
+                        Total {selectedSlots.length} hr{selectedSlots.length > 1 ? 's' : ''} = {formatPKR(selectedTotal)}
+                      </p>
+                    </div>
                     <Btn onClick={handleConfirm} className="w-full mt-4 py-3">
                       Confirm Booking
                     </Btn>
@@ -297,10 +313,7 @@ export function ArenaDetail() {
                         key={i}
                         type="button"
                         onClick={() => setSelectedDay(i)}
-                        className={cn(
-                          'btn-day',
-                          active ? 'btn-day-active' : 'btn-day-inactive'
-                        )}
+                        className={cn('btn-day', active ? 'btn-day-active' : 'btn-day-inactive')}
                       >
                         {format(day, 'EEE d')}
                       </button>
@@ -309,17 +322,29 @@ export function ArenaDetail() {
                 </div>
                 <SlotGrid
                   slots={daySlots}
-                  selectedId={slot?.id}
+                  selectedIds={selectedSlots.map((selectedSlot) => selectedSlot.id)}
                   onSelect={handleSlotSelect}
                 />
-                {slot && (
+                {selectedSlots.length > 0 && (
                   <div className="mt-6 pt-6 border-t border-line">
-                    <p className="font-mono text-sm text-mist">
-                      {format(parseISO(selectedDate), 'd MMM yyyy')} · {formatTime(slot.startTime)}
-                    </p>
-                    <p className="font-mono text-lime mt-2">
-                      1 hr × {formatPKR(slot.price)} = {formatPKR(slot.price)}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm text-mist">
+                        {format(parseISO(selectedDate), 'd MMM yyyy')} · {selectedSlots.length} slot{selectedSlots.length > 1 ? 's' : ''} selected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSlots.map((selectedSlot) => (
+                          <span
+                            key={selectedSlot.id}
+                            className="font-mono text-[11px] px-2 py-1 rounded-full border border-line text-chalk bg-ground/70"
+                          >
+                            {formatTime(selectedSlot.startTime)}-{formatTime(selectedSlot.endTime)}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="font-mono text-lime mt-2">
+                        Total {selectedSlots.length} hr{selectedSlots.length > 1 ? 's' : ''} = {formatPKR(selectedTotal)}
+                      </p>
+                    </div>
                     <Btn onClick={handleConfirm} className="w-full mt-4 py-3">
                       Confirm Booking
                     </Btn>

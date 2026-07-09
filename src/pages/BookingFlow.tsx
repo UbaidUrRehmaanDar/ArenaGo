@@ -14,7 +14,7 @@ import { formatPKR, formatDate, formatTime } from '../utils/formatters'
 
 export function BookingFlow() {
   const { user } = useAuth()
-  const { arenaId, arenaName, slot, step, resetBooking } = useBooking()
+  const { arenaId, arenaName, slots: selectedSlots, step, resetBooking } = useBooking()
   const [arenas, setArenas] = useState<Arena[]>([])
 
   useEffect(() => {
@@ -30,6 +30,7 @@ export function BookingFlow() {
     () => arenas.find((arena) => arena.id === arenaId) ?? null,
     [arenas, arenaId]
   )
+  const selectedTotal = selectedSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)
 
   if (!user) return <Navigate to="/login" replace />
 
@@ -58,12 +59,12 @@ export function BookingFlow() {
                   <p className="mt-2 text-chalk text-xl font-display truncate">{arenaName || 'None selected'}</p>
                 </div>
                 <div className="rounded-2xl border border-line bg-ground/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Slot</p>
-                  <p className="mt-2 text-chalk text-xl font-display">{slot ? formatTime(slot.startTime) : 'Waiting'}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Selection</p>
+                  <p className="mt-2 text-chalk text-xl font-display">{selectedSlots.length} hr{selectedSlots.length === 1 ? '' : 's'}</p>
                 </div>
                 <div className="rounded-2xl border border-line bg-ground/80 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Price</p>
-                  <p className="mt-2 text-chalk text-xl font-display">{slot ? formatPKR(slot.price) : '—'}</p>
+                  <p className="mt-2 text-chalk text-xl font-display">{selectedSlots.length > 0 ? formatPKR(selectedTotal) : '—'}</p>
                 </div>
                 <div className="rounded-2xl border border-line bg-ground/80 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">State</p>
@@ -81,7 +82,7 @@ export function BookingFlow() {
             </div>
           </section>
 
-          {slot && (
+          {selectedSlots.length > 0 && (
             <section className="rounded-[24px] border border-lime/30 bg-lime/5 p-5 md:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -95,20 +96,15 @@ export function BookingFlow() {
                 )}
               </div>
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <div className="rounded-2xl border border-line bg-slate p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Date</p>
-                  <p className="mt-2 text-chalk text-lg font-display">{formatDate(slot.date)}</p>
-                </div>
-                <div className="rounded-2xl border border-line bg-slate p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Time</p>
-                  <p className="mt-2 text-chalk text-lg font-display">
-                    {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-line bg-slate p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Price</p>
-                  <p className="mt-2 text-chalk text-lg font-display">{formatPKR(slot.price)}</p>
-                </div>
+                {selectedSlots.map((selectedSlot) => (
+                  <div key={selectedSlot.id} className="rounded-2xl border border-line bg-slate p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">{formatDate(selectedSlot.date)}</p>
+                    <p className="mt-2 text-chalk text-lg font-display">
+                      {formatTime(selectedSlot.startTime)} - {formatTime(selectedSlot.endTime)}
+                    </p>
+                    <p className="mt-2 text-lime font-mono">{formatPKR(selectedSlot.price)}</p>
+                  </div>
+                ))}
               </div>
             </section>
           )}

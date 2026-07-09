@@ -4,7 +4,9 @@ import { useBooking } from '../context/BookingContext'
 import { formatPKR, formatDate, formatTime } from '../utils/formatters'
 
 export function BookingConfirmed() {
-  const { slot, arenaName, reference } = useBooking()
+  const { slot, slots, arenaName, reference } = useBooking()
+  const activeSlots = slots.length > 0 ? slots : slot ? [slot] : []
+  const total = activeSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)
 
   return (
     <>
@@ -23,13 +25,19 @@ export function BookingConfirmed() {
           </div>
           <p className="font-mono text-lime text-sm">Booking confirmed!</p>
           <p className="font-mono text-mist text-xs mt-2">{reference ?? 'ARG-2024-00847'}</p>
-          {slot && (
+          {activeSlots.length > 0 && (
             <div className="mt-8 bg-slate p-6 rounded-sm text-left">
               <p className="font-display text-xl">{arenaName}</p>
-              <p className="font-mono text-sm text-mist mt-2">
-                {formatDate(slot.date)} · {formatTime(slot.startTime)}
+              <div className="mt-2 space-y-1">
+                {activeSlots.map((activeSlot) => (
+                  <p key={activeSlot.id} className="font-mono text-sm text-mist">
+                    {formatDate(activeSlot.date)} · {formatTime(activeSlot.startTime)} - {formatTime(activeSlot.endTime)}
+                  </p>
+                ))}
+              </div>
+              <p className="font-mono text-lime mt-2">
+                {activeSlots.length} hr{activeSlots.length > 1 ? 's' : ''} · {formatPKR(total)}
               </p>
-              <p className="font-mono text-lime mt-2">{formatPKR(slot.price)}</p>
             </div>
           )}
           <div className="flex gap-4 mt-8 justify-center">
