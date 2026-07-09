@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
-import { Bell, CalendarDays, Camera, Heart, MapPin, Pencil } from 'lucide-react'
+import { Bell, CalendarDays, Camera, Heart, KeyRound, MapPin, Pencil } from 'lucide-react'
 import { format, isFuture, parseISO } from 'date-fns'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
@@ -8,6 +8,7 @@ import { PageWrapper } from '../components/layout/PageWrapper'
 import { BtnLink } from '../components/ui/Btn'
 import { StatCard } from '../components/ui/StatCard'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import {
   fetchArenas,
   fetchFavoritesForUser,
@@ -40,6 +41,14 @@ export function Profile() {
   const [editCity, setEditCity] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [editSuccess, setEditSuccess] = useState(false)
+
+  // Change password
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwError, setPwError] = useState('')
+  const [pwSuccess, setPwSuccess] = useState(false)
   useEffect(() => {
     if (!user) return
 
@@ -111,6 +120,55 @@ export function Profile() {
       setTimeout(() => setEditSuccess(false), 2000)
     }
     setEditSaving(false)
+  }
+
+  const handlePasswordChange = async () => {
+    setPwError('')
+    setPwSuccess(false)
+
+    if (!newPassword || !currentPassword) {
+      setPwError('Please fill in all fields.')
+      return
+    }
+    if (newPassword.length < 6) {
+      setPwError('New password must be at least 6 characters.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('Passwords do not match.')
+      return
+    }
+
+    setPwSaving(true)
+
+    // Re-authenticate with current password first
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: profile?.email || user?.email || '',
+      password: currentPassword,
+    })
+
+    if (signInError) {
+      setPwError('Current password is incorrect.')
+      setPwSaving(false)
+      return
+    }
+
+    // Update to new password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+
+    if (updateError) {
+      setPwError(updateError.message)
+    } else {
+      setPwSuccess(true)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setTimeout(() => setPwSuccess(false), 3000)
+    }
+
+    setPwSaving(false)
   }
 
   const unreadNotifications = notifications.filter((notification) => !notification.isRead)
@@ -357,8 +415,72 @@ export function Profile() {
             </div>
           </section>
 
-          <section className="grid xl:grid-cols-[1.1fr_0.9fr] gap-4 md:gap-5">
-            <div className="rounded-[24px] border border-line bg-turf p-5 md:p-6">
+          {/* Change Password */}
+          <section className="rounded-[24px] border border-line bg-turf p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <h2 className="font-display text-2xl text-chalk">Change Password</h2>
+              <KeyRound size={18} className="text-lime shrink-0" />
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => { setCurrentPassword(e.target.value); setPwError('') }}
+                  className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); setPwError('') }}
+                  className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setPwError('') }}
+                  className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={handlePasswordChange}
+                disabled={pwSaving}
+                className={cn(
+                  'px-6 py-3 rounded-xl font-mono text-sm transition-colors',
+                  pwSuccess
+                    ? 'bg-lime/30 text-lime'
+                    : 'bg-lime text-on-lime hover:bg-lime/80',
+                  pwSaving && 'opacity-60 cursor-not-allowed'
+                )}
+              >
+                {pwSaving ? 'Updating…' : pwSuccess ? 'Password updated ✓' : 'Update Password'}
+              </button>
+              {pwError && (
+                <p className="text-booked text-sm font-body">{pwError}</p>
+              )}
+            </div>
+          </section>
+
+          <section className="grid xl:grid-cols-[1.1fr_0.9fr] gap-4 md:gap-5">            <div className="rounded-[24px] border border-line bg-turf p-5 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-display text-2xl text-chalk">Favourite Arenas</h2>
                 <Heart size={18} className="text-lime shrink-0" />
