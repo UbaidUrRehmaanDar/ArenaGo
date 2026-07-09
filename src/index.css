@@ -257,10 +257,8 @@
 
 .arena-btn:hover,
 .arena-btn:focus-visible {
-  border-radius: 100px;
   filter: brightness(1.05);
   transition:
-    border-radius 1.2s cubic-bezier(0.25, 1, 0.5, 1),
     filter 0.4s ease,
     background-color 0.4s ease;
 }
@@ -309,10 +307,6 @@
   border-radius: 0 5px 5px 0;
 }
 
-.arena-btn--attached-r:hover,
-.arena-btn--attached-r:focus-visible {
-  border-radius: 0 100px 100px 0;
-}
 
 .arena-btn--in-group {
   border-radius: 5px;
@@ -323,10 +317,8 @@
 
 .group:hover .arena-btn--in-group,
 .group:focus-visible .arena-btn--in-group {
-  border-radius: 100px;
   filter: brightness(1.05);
   transition:
-    border-radius 1.2s cubic-bezier(0.25, 1, 0.5, 1),
     filter 0.4s ease;
 }
 

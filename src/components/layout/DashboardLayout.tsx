@@ -29,21 +29,21 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
         <ThemeToggle />
       </header>
 
-      <aside className="hidden md:flex flex-col w-60 bg-turf border-r border-line fixed h-full">
-        <div className="p-6 border-b border-line flex items-center justify-between gap-3">
+      <aside className="hidden md:flex flex-col w-60 lg:w-72 bg-turf border-r border-line fixed h-full overflow-y-auto">
+        <div className="p-4 lg:p-6 border-b border-line flex items-center justify-between gap-3">
           <Link to="/">
             <ArenaGoLogo iconSize="h-10 w-10" textSize="text-2xl" />
           </Link>
           <ThemeToggle />
         </div>
-        <div className="p-6 flex items-center gap-3 border-b border-line">
+        <div className="p-4 lg:p-6 flex items-center gap-3 border-b border-line">
           <img
             src={user?.avatar ?? demoPlayer.avatar}
             alt=""
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-12 h-12 rounded-full object-cover flex-shrink-0"
           />
-          <div>
-            <p className="font-body text-chalk text-sm">{user?.name}</p>
+          <div className="min-w-0">
+            <p className="font-body text-chalk text-sm truncate">{user?.name}</p>
             <p className="text-mist text-xs capitalize">{role}</p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
               key={link.to}
               to={link.to}
               className={cn(
-                'block px-4 py-2.5 text-[15px] font-body rounded-sm border-l-2 border-transparent',
+                'block px-4 py-2.5 text-[15px] font-body rounded-sm border-l-2 border-transparent whitespace-nowrap',
                 location.pathname === link.to
                   ? 'border-lime text-chalk bg-slate/50'
                   : 'text-mist hover:text-chalk'
@@ -66,7 +66,7 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="p-6 text-mist text-[15px] text-left hover:text-chalk"
+          className="p-4 lg:p-6 text-mist text-[15px] text-left hover:text-chalk"
         >
           Logout
         </button>
@@ -87,7 +87,7 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
         ))}
       </nav>
 
-      <main className="flex-1 md:ml-60 p-4 sm:p-6 md:p-10 pb-24 md:pb-10">
+      <main className="flex-1 md:ml-60 lg:ml-72 p-4 sm:p-6 md:p-8 lg:p-10 pb-24 md:pb-10 overflow-x-hidden">
         <Outlet />
       </main>
     </div>

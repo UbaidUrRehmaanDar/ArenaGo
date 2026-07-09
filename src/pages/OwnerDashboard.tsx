@@ -65,9 +65,9 @@ function OwnerOverview() {
   )
 
   return (
-    <div>
-      <h1 className="font-display text-display-md text-chalk mb-8">OVERVIEW</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div className="max-w-7xl mx-auto">
+      <h1 className="font-display text-display-md text-chalk mb-6 lg:mb-8">OVERVIEW</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mb-6 lg:mb-8">
         <StatCard
           label="This Month"
           value={formatPKR(
@@ -86,7 +86,7 @@ function OwnerOverview() {
           value={formatPKR(analytics.reduce((s, a) => s + a.revenue.thisWeek, 0))}
         />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
         <StatCard
           label="Total Bookings This Month"
           value={analytics.reduce((s, a) => s + a.bookings.thisMonth, 0)}
@@ -103,19 +103,19 @@ function OwnerBookings() {
   const analytics = getAnalyticsForOwner(user?.arenaIds || [])[0]
   if (!analytics) return null
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">BOOKINGS</h1>
       <div className="space-y-3">
         {analytics.bookings.trend.map((d) => (
-          <div key={d.date} className="flex items-center gap-4">
-            <span className="font-mono text-sm text-mist w-12">{d.date}</span>
-            <div className="flex-1 h-4 bg-slate rounded-sm overflow-hidden">
+          <div key={d.date} className="flex items-center gap-3 lg:gap-4">
+            <span className="font-mono text-xs lg:text-sm text-mist w-10 lg:w-12 shrink-0">{d.date}</span>
+            <div className="flex-1 h-3 lg:h-4 bg-slate rounded-sm overflow-hidden min-w-0">
               <div
                 className="h-full bg-lime"
                 style={{ width: `${(d.count / 45) * 100}%` }}
               />
             </div>
-            <span className="font-mono text-sm text-chalk w-8">{d.count}</span>
+            <span className="font-mono text-xs lg:text-sm text-chalk w-8 shrink-0">{d.count}</span>
           </div>
         ))}
       </div>
@@ -141,18 +141,18 @@ function OwnerArenas() {
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">MY ARENAS</h1>
       <div className="grid gap-4">
         {arenas.map(
           (arena) =>
             arena && (
-              <div key={arena.id} className="bg-slate p-6 rounded-sm flex gap-6">
+              <div key={arena.id} className="bg-slate p-4 lg:p-6 rounded-sm flex flex-col sm:flex-row gap-4 lg:gap-6">
                 {/* Arena image with upload overlay */}
                 <button
                   type="button"
                   onClick={() => fileInputRefs.current[arena.id]?.click()}
-                  className="relative group w-32 h-24 shrink-0 rounded-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="relative group w-full sm:w-32 h-24 sm:h-24 shrink-0 rounded-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-lime"
                   aria-label="Upload arena photo"
                 >
                   <img
@@ -180,12 +180,12 @@ function OwnerArenas() {
                   ref={(el) => { fileInputRefs.current[arena.id] = el }}
                   onChange={(e) => handleImageChange(arena.id, e)}
                 />
-                <div className="flex-1">
-                  <p className="font-display text-2xl">{arena.name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-xl lg:text-2xl truncate">{arena.name}</p>
                   <p className="text-mist text-sm mt-1">
                     {arena.location.area} · {arena.occupancyRate}% occupancy
                   </p>
-                  <div className="mt-3 h-1 bg-ground rounded-sm overflow-hidden max-w-xs">
+                  <div className="mt-3 h-1 bg-ground rounded-sm overflow-hidden max-w-full sm:max-w-xs">
                     <div
                       className="h-full bg-lime"
                       style={{ width: `${arena.occupancyRate}%` }}
@@ -215,12 +215,12 @@ function OwnerAnalytics() {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="max-w-7xl mx-auto space-y-8 lg:space-y-12">
       <h1 className="font-display text-display-md text-chalk">ANALYTICS</h1>
 
       <div>
         <h2 className="font-display text-sm text-chalk mb-4 tracking-wide">REVENUE TREND</h2>
-        <div className="h-[280px] bg-slate/50 p-4 rounded-sm">
+        <div className="h-[250px] lg:h-[280px] bg-slate/50 p-4 rounded-sm">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={analytics.revenue.trend}>
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatPKR(Number(v)), 'Revenue']} />
@@ -239,8 +239,8 @@ function OwnerAnalytics() {
       <div>
         <h2 className="font-display text-sm text-chalk mb-4 tracking-wide">BOOKING HEATMAP</h2>
         <div className="overflow-x-auto">
-          <div className="min-w-[600px]">
-            <div className="flex gap-1 mb-1 pl-12">
+          <div className="min-w-[500px] lg:min-w-[600px]">
+            <div className="flex gap-1 mb-1 pl-10 lg:pl-12">
               {HEATMAP_HOURS.map((h) => (
                 <span key={h} className="flex-1 font-mono text-[9px] text-mist text-center">
                   {h}
@@ -249,12 +249,12 @@ function OwnerAnalytics() {
             </div>
             {heatmapData.map((row, dayIdx) => (
               <div key={HEATMAP_DAYS[dayIdx]} className="flex items-center gap-1 mb-1">
-                <span className="w-10 font-mono text-[10px] text-mist">{HEATMAP_DAYS[dayIdx]}</span>
-                <div className="flex flex-1 gap-0.5">
+                <span className="w-8 lg:w-10 font-mono text-[10px] text-mist shrink-0">{HEATMAP_DAYS[dayIdx]}</span>
+                <div className="flex flex-1 gap-0.5 min-w-0">
                   {row.map((intensity, hourIdx) => (
                     <div
                       key={hourIdx}
-                      className="flex-1 h-6 rounded-sm min-w-[12px]"
+                      className="flex-1 h-5 lg:h-6 rounded-sm min-w-[10px] lg:min-w-[12px]"
                       style={{
                         backgroundColor: `color-mix(in srgb, ${chart.lime} ${Math.round(intensity * 100)}%, transparent)`,
                       }}
@@ -270,7 +270,7 @@ function OwnerAnalytics() {
 
       <div>
         <h2 className="font-display text-sm text-chalk mb-4">SPORT BREAKDOWN</h2>
-        <div className="h-[280px]">
+        <div className="h-[250px] lg:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -279,7 +279,7 @@ function OwnerAnalytics() {
                 nameKey="sport"
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
+                outerRadius={80}
                 label={(props) => {
                   const entry = props as unknown as { sport: string; percentage: number }
                   return `${entry.sport} ${entry.percentage}%`
@@ -300,15 +300,15 @@ function OwnerAnalytics() {
         {arenas.map((arena) => {
           if (!arena) return null
           return (
-            <div key={arena.id} className="flex items-center gap-4 mb-4">
-              <span className="font-mono text-xs text-mist w-40 truncate">{arena.name}</span>
-              <div className="flex-1 h-3 bg-slate rounded-sm overflow-hidden">
+            <div key={arena.id} className="flex items-center gap-3 lg:gap-4 mb-4">
+              <span className="font-mono text-xs text-mist w-32 lg:w-40 truncate shrink-0">{arena.name}</span>
+              <div className="flex-1 h-2 lg:h-3 bg-slate rounded-sm overflow-hidden min-w-0">
                 <div
                   className="h-full bg-lime transition-all"
                   style={{ width: `${arena.occupancyRate}%` }}
                 />
               </div>
-              <span className="font-mono text-xs text-lime w-10">{arena.occupancyRate}%</span>
+              <span className="font-mono text-xs text-lime w-8 lg:w-10 shrink-0">{arena.occupancyRate}%</span>
             </div>
           )
         })}
@@ -334,11 +334,11 @@ function SlotManager() {
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">SLOT MANAGER</h1>
       <p className="text-mist text-sm mb-6">Click a cell to toggle blocked status (local only)</p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[600px]">
+        <table className="w-full min-w-[500px] lg:min-w-[600px]">
           <thead>
             <tr>
               <th className="text-left text-mist text-xs font-mono p-2">Arena</th>
@@ -354,7 +354,7 @@ function SlotManager() {
               (arena) =>
                 arena && (
                   <tr key={arena.id}>
-                    <td className="font-mono text-xs text-chalk p-2 max-w-[120px] truncate">
+                    <td className="font-mono text-xs text-chalk p-2 max-w-[100px] lg:max-w-[120px] truncate">
                       {arena.name}
                     </td>
                     {days.map((d) => {
@@ -367,7 +367,7 @@ function SlotManager() {
                             type="button"
                             onClick={() => toggle(key)}
                             className={cn(
-                              'w-full p-2 rounded-sm font-mono text-[10px] text-center',
+                              'w-full p-1 lg:p-2 rounded-sm font-mono text-[9px] lg:text-[10px] text-center',
                               isBlocked
                                 ? 'bg-booked/30 text-booked'
                                 : 'bg-slate text-lime hover:bg-lime/20'

@@ -92,32 +92,32 @@ function Overview() {
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
-    <div>
-      <h1 className="font-display text-display-md text-chalk mb-8">OVERVIEW</h1>
-      <div className="grid grid-cols-2 gap-4 mb-10">
+    <div className="max-w-7xl mx-auto">
+      <h1 className="font-display text-display-md text-chalk mb-6 lg:mb-8">OVERVIEW</h1>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8 lg:mb-10">
         <StatCard label="Total Bookings" value={bookings.length} />
         <StatCard label="Hours Played" value={hoursPlayed} />
         <StatCard label="Favourite Sport" value={favSport} />
         <StatCard label="Arenas Visited" value={arenasVisited} />
       </div>
 
-      <h2 className="font-display text-xl text-chalk mb-4">UPCOMING BOOKINGS</h2>
-      <div className="space-y-3 mb-10">
+      <h2 className="font-display text-lg lg:text-xl text-chalk mb-3 lg:mb-4">UPCOMING BOOKINGS</h2>
+      <div className="space-y-3 mb-8 lg:mb-10">
         {upcoming.slice(0, 3).map((b) => {
           const arena = arenas[b.arenaId]
           return (
-            <div key={b.id} className="bg-slate p-4 rounded-sm flex justify-between items-center">
-              <div>
-                <p className="font-display text-lg">{arena?.name}</p>
+            <div key={b.id} className="bg-slate p-3 lg:p-4 rounded-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-base lg:text-lg truncate">{arena?.name}</p>
                 <p className="text-mist text-[13px]">
                   {format(parseISO(b.date), 'd MMM')} · {b.startTime}
                 </p>
                 <SportTag sport={(b.sportId || 'Football') as SportType} className="mt-2" />
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => handleCancel(b.id, b.timeSlotId)}
-                className="text-mist text-sm hover:text-chalk"
+                className="text-mist text-sm hover:text-chalk whitespace-nowrap"
               >
                 Cancel
               </button>
@@ -129,13 +129,13 @@ function Overview() {
         )}
       </div>
 
-      <h2 className="font-display text-xl text-chalk mb-4">YOUR BADGES</h2>
-      <div className="flex flex-wrap gap-3 mb-10">
+      <h2 className="font-display text-lg lg:text-xl text-chalk mb-3 lg:mb-4">YOUR BADGES</h2>
+      <div className="flex flex-wrap gap-2 lg:gap-3 mb-8 lg:mb-10">
         {demoPlayer.badges.map((badge) => (
           <span
             key={badge.id}
             className={cn(
-              'px-4 py-2 bg-slate border-t-2 border-lime font-mono text-xs',
+              'px-3 lg:px-4 py-2 bg-slate border-t-2 border-lime font-mono text-xs',
               !badge.earned && 'opacity-35 border-mist'
             )}
           >
@@ -144,7 +144,7 @@ function Overview() {
         ))}
       </div>
 
-      <h2 className="font-display text-xl text-chalk mb-4">RECENT ACTIVITY</h2>
+      <h2 className="font-display text-lg lg:text-xl text-chalk mb-3 lg:mb-4">RECENT ACTIVITY</h2>
       <div className="relative pl-6 border-l border-line space-y-6">
         {timeline.map((e) => (
           <div key={e.id} className="relative">
@@ -182,9 +182,9 @@ function MyBookings() {
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">MY BOOKINGS</h1>
-      <div className="flex gap-2 mb-8 overflow-x-auto">
+      <div className="flex gap-2 mb-6 lg:mb-8 overflow-x-auto pb-2">
         {(['All', 'Upcoming', 'Completed', 'Cancelled'] as const).map((t) => (
           <button
             key={t}
@@ -202,14 +202,14 @@ function MyBookings() {
           return (
             <div
               key={b.id}
-              className="grid grid-cols-2 md:grid-cols-6 gap-4 py-4 border-b border-line items-center"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 py-4 border-b border-line items-center"
             >
-              <span className="font-body text-chalk md:col-span-1">{arena?.name}</span>
+              <span className="font-body text-chalk md:col-span-1 truncate">{arena?.name}</span>
               <SportTag sport={(b.sportId || 'Football') as SportType} size="sm" />
               <span className="font-mono text-xs text-mist">
                 {format(parseISO(b.date), 'd MMM')} {b.startTime}
               </span>
-              <span className="text-mist text-sm hidden md:block">1 hr</span>
+              <span className="text-mist text-sm hidden lg:block">1 hr</span>
               <span className="font-mono text-sm">{formatPKR(b.price || 0)}</span>
               <span
                 className={cn(
@@ -244,9 +244,9 @@ function Favourites() {
   }, [user])
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">FAVOURITE ARENAS</h1>
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {favourites.map(
           (arena) =>
             arena && (
@@ -258,10 +258,10 @@ function Favourites() {
                 <img
                   src={arena.images[0]}
                   alt=""
-                  className="w-24 h-24 object-cover rounded-sm"
+                  className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-sm flex-shrink-0"
                 />
-                <div>
-                  <p className="font-display text-xl">{arena.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-lg sm:text-xl truncate">{arena.name}</p>
                   <p className="text-mist text-sm">
                     {arena.location.area}, {arena.location.city}
                   </p>
@@ -280,15 +280,15 @@ function Activity() {
   if (loading) return <div className="text-mist">Loading...</div>
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">ACTIVITY</h1>
-      <div className="relative pl-6 border-l border-line space-y-8">
+      <div className="relative pl-6 border-l border-line space-y-6 lg:space-y-8">
         {bookings.map((b) => {
           const arena = arenas[b.arenaId]
           return (
             <div key={b.id} className="relative">
               <span className="absolute -left-[29px] w-3 h-3 rounded-full bg-lime top-1" />
-              <p className="text-chalk">
+              <p className="text-chalk text-[15px]">
                 {b.status === 'completed' ? 'Played at' : 'Booked'} {arena?.name}
               </p>
               <p className="font-mono text-xs text-mist mt-1">

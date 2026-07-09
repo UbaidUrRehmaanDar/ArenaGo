@@ -92,32 +92,32 @@ export function ArenaListings() {
   return (
     <>
       <Navbar />
-      <PageWrapper className="pt-24 pb-16 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <header className="mb-10">
-            <h1 className="font-display text-[clamp(1.8rem,7vw,5rem)] text-chalk">
+      <PageWrapper className="pt-20 md:pt-24 pb-16 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+          <header className="mb-8 md:mb-10">
+            <h1 className="font-display text-[clamp(1.8rem,7vw,3rem)] md:text-4xl lg:text-5xl text-chalk">
               FIND YOUR ARENA{' '}
               <span className="text-lime">IN LAHORE</span>
             </h1>
-            <form onSubmit={(e) => e.preventDefault()} className="flex mt-6 max-w-2xl">
+            <form onSubmit={(e) => e.preventDefault()} className="flex mt-4 md:mt-6 max-w-2xl">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, sport, or area..."
-                className="flex-1 bg-slate text-chalk px-4 py-3 rounded-l-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body text-[15px]"
+                className="flex-1 bg-slate text-chalk px-3 md:px-4 py-2.5 md:py-3 rounded-l-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body text-[13px] md:text-[15px]"
               />
-              <Btn type="submit" shape="attached-right" className="px-6 py-3">
+              <Btn type="submit" shape="attached-right" className="px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm">
                 Search
               </Btn>
             </form>
-            <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-2 mt-3 md:mt-4 overflow-x-auto pb-2 scrollbar-hide">
               {sportFilters.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setSport(s)}
-                  className={cn('btn-chip flex-shrink-0', sport === s ? 'btn-chip-active' : 'btn-chip-inactive')}
+                  className={cn('btn-chip flex-shrink-0 text-xs md:text-sm', sport === s ? 'btn-chip-active' : 'btn-chip-inactive')}
                 >
                   {s}
                 </button>
@@ -129,7 +129,7 @@ export function ArenaListings() {
                   key={c}
                   type="button"
                   onClick={() => setCity(c)}
-                  className={cn('btn-chip flex-shrink-0', city === c ? 'btn-chip-active' : 'btn-chip-inactive')}
+                  className={cn('btn-chip flex-shrink-0 text-xs md:text-sm', city === c ? 'btn-chip-active' : 'btn-chip-inactive')}
                 >
                   {c}
                 </button>
@@ -139,37 +139,37 @@ export function ArenaListings() {
                   key={e}
                   type="button"
                   onClick={() => setExtra(extra === e ? null : e)}
-                  className={cn('btn-chip flex-shrink-0', extra === e ? 'btn-chip-active' : 'btn-chip-inactive')}
+                  className={cn('btn-chip flex-shrink-0 text-xs md:text-sm', extra === e ? 'btn-chip-active' : 'btn-chip-inactive')}
                 >
                   {e}
                 </button>
               ))}
             </div>
-            <div className="flex justify-between items-center mt-6">
-              <p className="font-mono text-sm uppercase tracking-wider text-lime">{filtered.length} arenas found</p>
+            <div className="flex justify-between items-center mt-4 md:mt-6">
+              <p className="font-mono text-xs md:text-sm uppercase tracking-wider text-lime">{filtered.length} arenas found</p>
               <SortDropdown value={sort} onChange={setSort} />
             </div>
           </header>
 
-          <section className="mb-12 max-lg:mb-16">
-            <h2 className="font-display text-2xl text-chalk mb-6">TRENDING THIS WEEK</h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
+          <section className="mb-8 md:mb-12">
+            <h2 className="font-display text-xl md:text-2xl text-chalk mb-4 md:mb-6">TRENDING THIS WEEK</h2>
+            <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 -mx-4 px-4">
               {trending.map((a) => (
                 <ArenaCard key={a.id} arena={a} variant="trending" />
               ))}
             </div>
           </section>
 
-          <div className="flex gap-8">
-            <div className="flex-1">
+          <div className="flex gap-4 md:gap-8">
+            <div className="flex-1 min-w-0">
               {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-[380px] rounded-sm skeleton-shimmer" />
+                    <div key={i} className="h-[300px] md:h-[380px] rounded-sm skeleton-shimmer" />
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 items-stretch">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 md:gap-6 items-stretch">
                   {filtered.map((arena) => (
                     <div
                       key={arena.id}
