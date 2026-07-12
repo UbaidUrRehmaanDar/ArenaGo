@@ -218,13 +218,17 @@ export default function Community() {
 
         {/* ── Guest notice ──────────────────────────────────── */}
         {!user && (
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-line bg-slate/60 px-4 py-3">
-            <p className="text-sm font-body text-mist">
-              You're browsing as a guest. Log in to like, comment, and post.
-            </p>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-lime/20 bg-lime/5 px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-lime shrink-0" />
+              <p className="text-sm font-body text-chalk">
+                You're browsing as a guest.{' '}
+                <span className="text-mist">Log in to like, comment, and post.</span>
+              </p>
+            </div>
             <Link
               to="/login"
-              className="shrink-0 text-sm font-semibold text-lime hover:underline"
+              className="shrink-0 text-xs font-mono font-semibold uppercase tracking-widest text-on-lime bg-lime hover:brightness-110 px-3 py-1.5 rounded-lg transition-all duration-150"
             >
               Log in
             </Link>
