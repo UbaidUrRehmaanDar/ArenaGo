@@ -11,25 +11,25 @@ import { ToastContainer } from './components/ui/Toast'
 import { LoadingScreen } from './components/ui/LoadingScreen'
 
 // Lazy-load all pages so each route is a separate chunk
-const Landing          = lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })))
-const Home             = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })))
-const About            = lazy(() => import('./pages/About').then(m => ({ default: m.About })))
-const Community        = lazy(() => import('./pages/Community').then(m => ({ default: m.Community })))
-const Notifications    = lazy(() => import('./pages/Notifications').then(m => ({ default: m.Notifications })))
-const ArenaListings    = lazy(() => import('./pages/ArenaListings').then(m => ({ default: m.ArenaListings })))
-const ArenaDetail      = lazy(() => import('./pages/ArenaDetail').then(m => ({ default: m.ArenaDetail })))
-const ArenaSchedule    = lazy(() => import('./pages/ArenaSchedule').then(m => ({ default: m.ArenaSchedule })))
-const BookingFlow      = lazy(() => import('./pages/BookingFlow').then(m => ({ default: m.BookingFlow })))
-const BookingConfirmed = lazy(() => import('./pages/BookingConfirmed').then(m => ({ default: m.BookingConfirmed })))
-const Profile          = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })))
-const Promotions       = lazy(() => import('./pages/Promotions').then(m => ({ default: m.Promotions })))
-const PlayerBookings   = lazy(() => import('./pages/PlayerBookings').then(m => ({ default: m.PlayerBookings })))
-const Favourites       = lazy(() => import('./pages/Favourites').then(m => ({ default: m.Favourites })))
-const Activity         = lazy(() => import('./pages/Activity').then(m => ({ default: m.Activity })))
-const OwnerDashboard   = lazy(() => import('./pages/OwnerDashboard').then(m => ({ default: m.OwnerDashboard })))
-const Login            = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
-const Signup           = lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })))
-const CompleteProfile  = lazy(() => import('./pages/CompleteProfile').then(m => ({ default: m.CompleteProfile })))
+const Landing          = lazy(() => import('./pages/Landing'))
+const Home             = lazy(() => import('./pages/Home'))
+const About            = lazy(() => import('./pages/About'))
+const Community        = lazy(() => import('./pages/Community'))
+const Notifications    = lazy(() => import('./pages/Notifications'))
+const ArenaListings    = lazy(() => import('./pages/ArenaListings'))
+const ArenaDetail      = lazy(() => import('./pages/ArenaDetail'))
+const ArenaSchedule    = lazy(() => import('./pages/ArenaSchedule'))
+const BookingFlow      = lazy(() => import('./pages/BookingFlow'))
+const BookingConfirmed = lazy(() => import('./pages/BookingConfirmed'))
+const Profile          = lazy(() => import('./pages/Profile'))
+const Promotions       = lazy(() => import('./pages/Promotions'))
+const PlayerBookings   = lazy(() => import('./pages/PlayerBookings'))
+const Favourites       = lazy(() => import('./pages/Favourites'))
+const Activity         = lazy(() => import('./pages/Activity'))
+const OwnerDashboard   = lazy(() => import('./pages/OwnerDashboard'))
+const Login            = lazy(() => import('./pages/Login'))
+const Signup           = lazy(() => import('./pages/Signup'))
+const CompleteProfile  = lazy(() => import('./pages/CompleteProfile'))
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -73,7 +73,7 @@ function AnimatedRoutes() {
 
   return (
     <AnimatePresence mode="wait">
-      <Suspense fallback={<div className="min-h-screen bg-ground" />}>
+      <Suspense fallback={<LoadingScreen />}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={
             <PublicOnlyRoute>

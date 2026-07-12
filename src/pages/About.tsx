@@ -66,7 +66,7 @@ const VALUES = [
   },
 ]
 
-export function About() {
+export default function About() {
   const navigate = useNavigate()
 
   return (

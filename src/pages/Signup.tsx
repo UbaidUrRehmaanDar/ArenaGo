@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { cn } from '../utils/formatters'
 import { AuthSidebar } from '../components/layout/AuthSidebar'
 
-export function Signup() {
+export default function Signup() {
   const { signup } = useAuth()
   const navigate = useNavigate()
   const [role, setRole] = useState<'player' | 'owner'>('player')

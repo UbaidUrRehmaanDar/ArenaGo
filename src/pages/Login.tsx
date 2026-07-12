@@ -6,7 +6,7 @@ import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { AuthSidebar } from '../components/layout/AuthSidebar'
 
-export function Login() {
+export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')

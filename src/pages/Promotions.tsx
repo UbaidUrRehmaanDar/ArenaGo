@@ -21,7 +21,7 @@ function formatOfferValue(promotion: PromotionRecord) {
   return `${formatPKR(promotion.value)} value`
 }
 
-export function Promotions() {
+export default function Promotions() {
   const [promotions, setPromotions] = useState<PromotionFeedItem[]>([])
   const [loading, setLoading] = useState(true)
 

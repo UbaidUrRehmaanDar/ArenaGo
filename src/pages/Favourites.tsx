@@ -11,7 +11,7 @@ import { fetchFavoritesForUser } from '../services/supabaseData'
 import { formatPKR } from '../utils/formatters'
 import type { Arena } from '../types'
 
-export function Favourites() {
+export default function Favourites() {
   const { user } = useAuth()
   const [favourites, setFavourites] = useState<Arena[]>([])
   const [loading, setLoading] = useState(true)

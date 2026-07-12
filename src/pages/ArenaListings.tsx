@@ -24,7 +24,7 @@ const sportFilters: (SportType | 'All Sports')[] = [
 const extraFilters = ['Available Now', 'Peak Hours']
 const budgetFilters = ['Under PKR 500', 'Under PKR 1000', 'Under PKR 1500', 'Under PKR 2000']
 
-export function ArenaListings() {
+export default function ArenaListings() {
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(searchParams.get('q') || '')

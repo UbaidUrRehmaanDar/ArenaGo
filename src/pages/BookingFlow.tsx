@@ -12,7 +12,7 @@ import { fetchArenas } from '../services/supabaseData'
 import type { Arena } from '../types'
 import { formatPKR, formatDate, formatTime } from '../utils/formatters'
 
-export function BookingFlow() {
+export default function BookingFlow() {
   const { user } = useAuth()
   const { arenaId, arenaName, slots: selectedSlots, step, resetBooking } = useBooking()
   const [arenas, setArenas] = useState<Arena[]>([])

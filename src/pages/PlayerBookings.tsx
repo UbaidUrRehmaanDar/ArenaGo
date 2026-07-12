@@ -18,7 +18,7 @@ const tabs = ['All', 'Upcoming', 'Completed', 'Cancelled'] as const
 
 type BookingTab = (typeof tabs)[number]
 
-export function PlayerBookings() {
+export default function PlayerBookings() {
   const { user } = useAuth()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [arenas, setArenas] = useState<Arena[]>([])

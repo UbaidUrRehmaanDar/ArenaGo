@@ -92,12 +92,11 @@ CREATE POLICY "Posts are viewable by everyone"
 CREATE POLICY "Users can create their own posts"
   ON community_posts FOR INSERT WITH CHECK (auth.uid() = author_id);
 
-CREATE POLICY "Users can update their own posts"
-  ON community_posts FOR UPDATE USING (auth.uid() = author_id);
-
-CREATE POLICY "Users can soft-delete their own posts"
+-- Authors can update or soft-delete their own posts
+CREATE POLICY "Authors can update their own posts"
   ON community_posts FOR UPDATE
-  USING (auth.uid() = author_id AND is_deleted = FALSE)
+  TO authenticated
+  USING (auth.uid() = author_id)
   WITH CHECK (auth.uid() = author_id);
 
 -- RLS Policies for community_post_images
@@ -131,12 +130,10 @@ CREATE POLICY "Comments are viewable by everyone"
 CREATE POLICY "Users can create their own comments"
   ON community_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
 
-CREATE POLICY "Users can update their own comments"
-  ON community_comments FOR UPDATE USING (auth.uid() = author_id);
-
-CREATE POLICY "Users can soft-delete their own comments"
+CREATE POLICY "Authors can update their own comments"
   ON community_comments FOR UPDATE
-  USING (auth.uid() = author_id AND is_deleted = FALSE)
+  TO authenticated
+  USING (auth.uid() = author_id)
   WITH CHECK (auth.uid() = author_id);
 
 -- RLS Policies for community_likes

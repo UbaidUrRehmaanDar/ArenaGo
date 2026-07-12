@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Star, Heart } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useEffect, useState, memo } from 'react'
 import type { Arena } from '../../types'
 import { SportTag } from './SportTag'
 import { OccupancyBar } from './OccupancyBar'
 import { BtnLink, BtnMorphLabel } from './Btn'
 import { formatPKR } from '../../utils/formatters'
 import { cn } from '../../utils/formatters'
-import { useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { addFavorite, removeFavorite, isFavorited as checkIsFavorited } from '../../services/supabaseData'
 
 interface ArenaCardProps {
   arena: Arena
@@ -15,7 +17,7 @@ interface ArenaCardProps {
   className?: string
 }
 
-function TrendingArenaCard({ arena, className }: { arena: Arena; className?: string }) {
+const TrendingArenaCard = memo(function TrendingArenaCard({ arena, className }: { arena: Arena; className?: string }) {
   return (
     <Link
       to={`/arenas/${arena.slug}`}
@@ -44,14 +46,33 @@ function TrendingArenaCard({ arena, className }: { arena: Arena; className?: str
       </div>
     </Link>
   )
-}
+})
 
-export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardProps) {
-  const [isFavorited, setIsFavorited] = useState(false)
+export const ArenaCard = memo(function ArenaCard({ arena, variant = 'listing', className }: ArenaCardProps) {
+  const { user } = useAuth()
+  const [favorited, setFavorited] = useState(false)
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  useEffect(() => {
+    if (user?.id) {
+      checkIsFavorited(user.id, arena.id).then(setFavorited)
+    }
+  }, [user?.id, arena.id])
+
+  const handleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setIsFavorited(!isFavorited)
+    if (!user?.id) return
+
+    try {
+      const success = favorited
+        ? await removeFavorite(user.id, arena.id)
+        : await addFavorite(user.id, arena.id)
+
+      if (success) {
+        setFavorited(!favorited)
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    }
   }
 
   if (variant === 'trending') {
@@ -135,7 +156,7 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
         >
           <Heart 
             size={16} 
-            className={isFavorited ? 'text-lime fill-lime' : 'text-chalk'} 
+            className={favorited ? 'text-lime fill-lime' : 'text-chalk'} 
           />
         </button>
         {arena.isPopular && (
@@ -195,4 +216,4 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
       </div>
     </motion.article>
   )
-}
+})

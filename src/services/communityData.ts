@@ -18,7 +18,8 @@ export async function fetchPosts(
   filter: CommunityFilter = 'latest',
   page = 1,
   pageSize = 20,
-  searchQuery?: string
+  searchQuery?: string,
+  currentUserId?: string
 ): Promise<{ posts: CommunityPost[]; total: number }> {
   try {
     const from = (page - 1) * pageSize
@@ -66,7 +67,20 @@ export async function fetchPosts(
     if (error) throw error
     if (!data) return { posts: [], total: 0 }
 
-    const posts = data.map(mapPostRow)
+    // Fetch likes by current user to determine isLikedByCurrentUser
+    let userLikes: Set<string> = new Set()
+    if (currentUserId) {
+      const { data: likesData } = await supabase
+        .from('community_likes')
+        .select('post_id')
+        .eq('user_id', currentUserId)
+
+      if (likesData) {
+        userLikes = new Set(likesData.map(like => like.post_id))
+      }
+    }
+
+    const posts = data.map(row => mapPostRow(row, userLikes))
     return { posts, total: count || 0 }
   } catch (err) {
     console.error('Error fetching posts:', err)
@@ -77,7 +91,7 @@ export async function fetchPosts(
 /**
  * Fetches a single post by ID
  */
-export async function fetchPostById(postId: string): Promise<CommunityPost | null> {
+export async function fetchPostById(postId: string, currentUserId?: string): Promise<CommunityPost | null> {
   try {
     const { data, error } = await supabase
       .from('community_posts')
@@ -101,7 +115,22 @@ export async function fetchPostById(postId: string): Promise<CommunityPost | nul
       .single()
 
     if (error || !data) return null
-    return mapPostRow(data)
+
+    // Check if current user liked this post
+    let userLikes: Set<string> = new Set()
+    if (currentUserId) {
+      const { data: likesData } = await supabase
+        .from('community_likes')
+        .select('post_id')
+        .eq('user_id', currentUserId)
+        .eq('post_id', postId)
+
+      if (likesData && likesData.length > 0) {
+        userLikes.add(postId)
+      }
+    }
+
+    return mapPostRow(data, userLikes)
   } catch (err) {
     console.error('Error fetching post:', err)
     return null
@@ -118,6 +147,8 @@ export async function createPost(params: {
   images?: File[]
 }): Promise<{ success: boolean; postId?: string; error?: string }> {
   try {
+    console.log('Creating post with authorId:', params.authorId, 'type:', typeof params.authorId)
+    
     const { data: postData, error: postError } = await supabase
       .from('community_posts')
       .insert({
@@ -127,6 +158,8 @@ export async function createPost(params: {
       })
       .select()
       .single()
+
+    console.log('Post created:', postData, 'error:', postError)
 
     if (postError) {
       return { success: false, error: postError.message }
@@ -188,15 +221,21 @@ export async function updatePost(
  */
 export async function deletePost(postId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('Attempting to delete post:', postId)
+    
     const { error } = await supabase
       .from('community_posts')
       .update({ is_deleted: true })
       .eq('id', postId)
 
+    console.log('Delete operation result:', { error, postId })
+
     if (error) {
+      console.error('Delete error details:', error)
       return { success: false, error: error.message }
     }
 
+    console.log('Post deleted successfully:', postId)
     return { success: true }
   } catch (err: any) {
     console.error('Error deleting post:', err)
@@ -211,18 +250,37 @@ export async function deletePost(postId: string): Promise<{ success: boolean; er
  */
 export async function likePost(postId: string, userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
+    // First check if user already liked this post
+    const { data: existingLike, error: checkError } = await supabase
+      .from('community_likes')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found
+      return { success: false, error: checkError.message }
+    }
+
+    // If already liked, return success (idempotent operation)
+    if (existingLike) {
+      return { success: true }
+    }
+
+    // Insert new like
+    const { error, count } = await supabase
       .from('community_likes')
       .insert({
         post_id: postId,
         user_id: userId,
       })
+      .select('id')
 
     if (error) {
       return { success: false, error: error.message }
     }
 
-    return { success: true }
+    return { success: true, insertedId: count }
   } catch (err: any) {
     console.error('Error liking post:', err)
     return { success: false, error: err.message || 'Unknown error' }
@@ -234,11 +292,30 @@ export async function likePost(postId: string, userId: string): Promise<{ succes
  */
 export async function unlikePost(postId: string, userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
+    // First verify the like exists
+    const { data: existingLike, error: checkError } = await supabase
+      .from('community_likes')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found
+      return { success: false, error: checkError.message }
+    }
+
+    // If not liked, return success (idempotent operation)
+    if (!existingLike) {
+      return { success: true }
+    }
+
+    // Delete the like
+    const { error, count } = await supabase
       .from('community_likes')
       .delete()
       .eq('post_id', postId)
       .eq('user_id', userId)
+      .select('id')
 
     if (error) {
       return { success: false, error: error.message }
@@ -416,13 +493,36 @@ export async function uploadPostImage(postId: string, file: File): Promise<strin
     const ext = file.name.split('.').pop() ?? 'jpg'
     const path = `community/${postId}/${Date.now()}.${ext}`
 
+    console.log('Uploading image to bucket: community-images, path:', path)
+
     const { error: uploadError } = await supabase.storage
       .from('community-images')
       .upload(path, file, { upsert: true, contentType: file.type })
 
     if (uploadError) {
       console.error('Post image upload error:', uploadError)
-      return null
+      // Try to create bucket if it doesn't exist
+      if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('not found')) {
+        console.log('Bucket not found, attempting to create...')
+        const { error: createError } = await supabase.storage.createBucket('community-images', {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        })
+        if (createError) {
+          console.error('Failed to create bucket:', createError)
+          return null
+        }
+        // Retry upload after creating bucket
+        const { error: retryError } = await supabase.storage
+          .from('community-images')
+          .upload(path, file, { upsert: true, contentType: file.type })
+        if (retryError) {
+          console.error('Retry upload error:', retryError)
+          return null
+        }
+      } else {
+        return null
+      }
     }
 
     const { data: urlData } = supabase.storage
@@ -466,7 +566,7 @@ export async function deletePostImage(imageUrl: string): Promise<boolean> {
 
 // ── Helper Functions ───────────────────────────────────────────────────────
 
-function mapPostRow(row: any): CommunityPost {
+function mapPostRow(row: any, userLikes?: Set<string>): CommunityPost {
   const profile = row.profiles
   const images = Array.isArray(row.community_post_images)
     ? row.community_post_images
@@ -488,6 +588,7 @@ function mapPostRow(row: any): CommunityPost {
     likeCount: Number(row.like_count ?? 0),
     commentCount: Number(row.comment_count ?? 0),
     isDeleted: Boolean(row.is_deleted),
+    isLikedByCurrentUser: userLikes?.has(row.id) || false,
   }
 }
 

@@ -85,7 +85,7 @@ function isPhoneInvalid(phone: string): boolean {
   return true
 }
 
-export function CompleteProfile() {
+export default function CompleteProfile() {
   const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
 

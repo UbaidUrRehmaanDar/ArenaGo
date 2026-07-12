@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { CommunityPost } from '../../types'
 import { Heart, MessageCircle, Share2, Flag, MoreVertical, Edit2, Trash2, CheckCircle, Trophy, Megaphone } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -28,9 +28,36 @@ export function PostCard({
   onDelete,
   className,
 }: PostCardProps) {
-  const isOwner = currentUserId === post.authorId
+  // More robust ownership check - handle UUID comparison
+  const isOwner = currentUserId && post.authorId && 
+    (currentUserId === post.authorId || 
+     String(currentUserId) === String(post.authorId) ||
+     currentUserId.toString() === post.authorId.toString())
+  
   const isLiked = post.isLikedByCurrentUser || false
   const [showComments, setShowComments] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleMenuAction = (action: 'edit' | 'delete') => {
+    setShowMenu(false)
+    if (action === 'edit') {
+      onEdit?.(post.id)
+    } else if (action === 'delete') {
+      onDelete?.(post.id)
+    }
+  }
 
   const handleLike = () => {
     if (isLiked && onUnlike) {
@@ -97,6 +124,14 @@ export function PostCard({
                 <span className="font-mono text-xs text-mist">
                   {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                 </span>
+                {post.updatedAt && post.updatedAt !== post.createdAt && (
+                  <>
+                    <span className="text-mist">·</span>
+                    <span className="font-mono text-xs text-lime">
+                      edited {formatDistanceToNow(new Date(post.updatedAt), { addSuffix: true })}
+                    </span>
+                  </>
+                )}
                 {getPostTypeLabel() && (
                   <>
                     <span className="text-mist">·</span>
@@ -111,15 +146,56 @@ export function PostCard({
           </div>
 
           {/* Actions Menu */}
-          {isOwner && (
+          {/* Temporarily show for all users to test functionality */}
+          <div className="relative" ref={menuRef}>
             <button
               type="button"
+              onClick={() => setShowMenu(!showMenu)}
               className="p-1.5 rounded-lg hover:bg-white/5 text-mist hover:text-chalk transition-colors"
               aria-label="More options"
             >
               <MoreVertical size={18} />
             </button>
-          )}
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-slate border border-line rounded-sm shadow-lg z-10 min-w-[120px]">
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => handleMenuAction('edit')}
+                    className="w-full px-4 py-2 text-left text-sm text-chalk hover:bg-white/5 flex items-center gap-2 transition-colors"
+                  >
+                    <Edit2 size={14} />
+                    Edit
+                  </button>
+                )}
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => handleMenuAction('delete')}
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-white/5 flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                )}
+                {!isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false)
+                      onReport?.(post.id)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-chalk hover:bg-white/5 flex items-center gap-2 transition-colors"
+                  >
+                    <Flag size={14} />
+                    Report
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -211,28 +287,6 @@ export function PostCard({
             </button>
           )}
         </div>
-
-        {/* Owner Actions */}
-        {isOwner && (
-          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-line/50">
-            <button
-              type="button"
-              onClick={() => onEdit?.(post.id)}
-              className="flex items-center gap-1.5 text-xs font-mono text-mist hover:text-lime transition-colors"
-            >
-              <Edit2 size={14} />
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete?.(post.id)}
-              className="flex items-center gap-1.5 text-xs font-mono text-mist hover:text-red-400 transition-colors"
-            >
-              <Trash2 size={14} />
-              Delete
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Comments Section */}

@@ -10,7 +10,7 @@ import { SportCategories } from '../components/sections/SportCategories'
 import { Testimonials } from '../components/sections/Testimonials'
 import { CtaSection } from '../components/sections/CtaSection'
 
-export function Landing() {
+export default function Landing() {
   return (
     <>
       <Navbar transparent />

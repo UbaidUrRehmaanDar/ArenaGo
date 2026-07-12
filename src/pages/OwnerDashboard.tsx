@@ -396,7 +396,7 @@ function SlotManager() {
   )
 }
 
-export function OwnerDashboard() {
+export default function OwnerDashboard() {
   const { user } = useAuth()
   if (!user || user.role !== 'owner') {
     return <Navigate to="/login" replace />

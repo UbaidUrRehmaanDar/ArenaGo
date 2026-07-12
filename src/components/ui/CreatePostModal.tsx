@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Image as ImageIcon, X as RemoveImage } from 'lucide-react'
 import { Btn } from './Btn'
 import type { PostType } from '../../types'
@@ -9,6 +9,9 @@ interface CreatePostModalProps {
   onClose: () => void
   onCreatePost: (data: { caption: string; postType: PostType; images: File[] }) => void
   isLoading?: boolean
+  initialCaption?: string
+  initialPostType?: PostType
+  isEdit?: boolean
 }
 
 const POST_TYPES: { value: PostType; label: string }[] = [
@@ -17,11 +20,20 @@ const POST_TYPES: { value: PostType; label: string }[] = [
   { value: 'tournament', label: 'Tournament' },
 ]
 
-export function CreatePostModal({ isOpen, onClose, onCreatePost, isLoading }: CreatePostModalProps) {
-  const [caption, setCaption] = useState('')
-  const [postType, setPostType] = useState<PostType>('general')
+export function CreatePostModal({ isOpen, onClose, onCreatePost, isLoading, initialCaption, initialPostType, isEdit }: CreatePostModalProps) {
+  const [caption, setCaption] = useState(initialCaption || '')
+  const [postType, setPostType] = useState<PostType>(initialPostType || 'general')
   const [images, setImages] = useState<File[]>([])
   const imageInputRef = useRef<HTMLInputElement>(null)
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setCaption(initialCaption || '')
+      setPostType(initialPostType || 'general')
+      setImages([])
+    }
+  }, [isOpen, initialCaption, initialPostType])
 
   if (!isOpen) return null
 
@@ -67,7 +79,7 @@ export function CreatePostModal({ isOpen, onClose, onCreatePost, isLoading }: Cr
       <div className="relative bg-slate rounded-sm border border-line w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-line">
-          <h2 className="font-display text-xl text-chalk">Create Post</h2>
+          <h2 className="font-display text-xl text-chalk">{isEdit ? 'Edit Post' : 'Create Post'}</h2>
           <button
             type="button"
             onClick={handleClose}

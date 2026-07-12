@@ -12,7 +12,7 @@ import { fetchPlayerBookings, fetchArenaById } from '../services/supabaseData'
 import { cn } from '../utils/formatters'
 import type { Booking, Arena } from '../types'
 
-export function Activity() {
+export default function Activity() {
   const { user } = useAuth()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [arenas, setArenas] = useState<Record<string, Arena>>({})

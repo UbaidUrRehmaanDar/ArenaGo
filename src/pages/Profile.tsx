@@ -50,7 +50,7 @@ async function getCroppedBlob(imageSrc: string, croppedArea: Area, rotation: num
   })
 }
 
-export function Profile() {
+export default function Profile() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileRecord | null>(null)

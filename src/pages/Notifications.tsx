@@ -23,7 +23,7 @@ const TYPE_LABELS: Record<string, string> = {
   system:            'System',
 }
 
-export function Notifications() {
+export default function Notifications() {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<NotificationRecord[]>([])
   const [loading, setLoading] = useState(true)

@@ -6,10 +6,17 @@ export default defineConfig({
   plugins: [react()],
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   optimizeDeps: {
-    include: ['react-countup'],
+    include: ['react-countup', 'lucide-react', 'date-fns'],
   },
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -25,8 +32,19 @@ export default defineConfig({
           if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
             return 'vendor-react'
           }
+          if (id.includes('node_modules/date-fns')) {
+            return 'vendor-date-fns'
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons'
+          }
         },
       },
+    },
+  },
+  server: {
+    hmr: {
+      overlay: false,
     },
   },
 })

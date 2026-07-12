@@ -55,7 +55,7 @@ const allAmenities = [
   'Spectator Stand',
 ]
 
-export function ArenaDetail() {
+export default function ArenaDetail() {
   const { slug } = useParams()
   const [arena, setArena] = useState<any>(null)
   const [reviews, setReviews] = useState<any[]>([])
@@ -187,14 +187,14 @@ export function ArenaDetail() {
               </button>
             </div>
           </div>
-          <div className="flex gap-1 px-0">
+          <div className="flex gap-3 px-4 py-3 bg-ground">
             {arena.images.slice(0, 4).map((img: string, i: number) => (
               <button
                 key={img}
                 type="button"
                 onClick={() => setHeroImage(i)}
-                className={`flex-1 h-[100px] md:h-[150px] overflow-hidden ${
-                  heroImage === i ? 'ring-2 ring-lime' : 'opacity-70'
+                className={`flex-1 h-[80px] md:h-[120px] overflow-hidden rounded-sm transition-all ${
+                  heroImage === i ? 'ring-2 ring-lime ring-offset-2 ring-offset-ground' : 'opacity-70 hover:opacity-100'
                 }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />

@@ -12,7 +12,7 @@ import { fetchArenaBySlug, fetchSlotsForArenaDate } from '../services/supabaseDa
 import type { Arena, Slot } from '../types'
 import { cn, formatPKR, formatTime } from '../utils/formatters'
 
-export function ArenaSchedule() {
+export default function ArenaSchedule() {
   const { slug } = useParams()
   const [arena, setArena] = useState<Arena | null>(null)
   const [loading, setLoading] = useState(true)

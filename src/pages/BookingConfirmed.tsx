@@ -3,7 +3,7 @@ import { BtnLink } from '../components/ui/Btn'
 import { useBooking } from '../context/BookingContext'
 import { formatPKR, formatDate, formatTime } from '../utils/formatters'
 
-export function BookingConfirmed() {
+export default function BookingConfirmed() {
   const { slot, slots, arenaName, reference } = useBooking()
   const activeSlots = slots.length > 0 ? slots : slot ? [slot] : []
   const total = activeSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)

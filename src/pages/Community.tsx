@@ -4,10 +4,11 @@ import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { PostCard } from '../components/ui/PostCard'
 import { CreatePostModal } from '../components/ui/CreatePostModal'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { Btn } from '../components/ui/Btn'
 import { Search, Plus, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { fetchPosts, likePost, unlikePost, createPost } from '../services/communityData'
+import { fetchPosts, likePost, unlikePost, createPost, deletePost, updatePost } from '../services/communityData'
 import type { CommunityPost, CommunityFilter, PostType } from '../types'
 import { cn } from '../utils/formatters'
 
@@ -19,7 +20,7 @@ const FILTERS: { value: CommunityFilter; label: string }[] = [
   { value: 'tournaments', label: 'Tournaments' },
 ]
 
-export function Community() {
+export default function Community() {
   const { user } = useAuth()
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,6 +31,14 @@ export function Community() {
   const [total, setTotal] = useState(0)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isCreatingPost, setIsCreatingPost] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [postToDelete, setPostToDelete] = useState<string | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [postToEdit, setPostToEdit] = useState<CommunityPost | null>(null)
+  const [isEditingPost, setIsEditingPost] = useState(false)
+
+  // Debug logging
+  console.log('Community page - current user:', user?.id, 'type:', typeof user?.id)
 
   const loadPosts = useCallback(async (pageNum = 1, append = false) => {
     try {
@@ -38,7 +47,8 @@ export function Community() {
         filter,
         pageNum,
         20,
-        searchQuery || undefined
+        searchQuery || undefined,
+        user?.id
       )
 
       if (append) {
@@ -125,6 +135,79 @@ export function Community() {
       console.error('Error creating post:', error)
     } finally {
       setIsCreatingPost(false)
+    }
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return
+    setPostToDelete(postId)
+    setDeleteModalOpen(true)
+  }
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return
+
+    try {
+      console.log('Deleting post:', postToDelete)
+      const { success, error } = await deletePost(postToDelete)
+      console.log('Delete result:', { success, error })
+      
+      if (success) {
+        // Remove post from state
+        setPosts((prev) => prev.filter((post) => post.id !== postToDelete))
+        setTotal((prev) => Math.max(0, prev - 1))
+        setDeleteModalOpen(false)
+        setPostToDelete(null)
+      } else {
+        console.error('Delete failed:', error)
+        alert('Failed to delete post: ' + (error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      alert('Error deleting post')
+    }
+  }
+
+  const handleEditPost = (postId: string) => {
+    const post = posts.find((p) => p.id === postId)
+    if (post) {
+      setPostToEdit(post)
+      setEditModalOpen(true)
+    }
+  }
+
+  const handleUpdatePost = async (data: { caption: string; postType: PostType }) => {
+    if (!user || !postToEdit) return
+
+    setIsEditingPost(true)
+    try {
+      console.log('Updating post:', postToEdit.id, 'with data:', data)
+      const { success, error } = await updatePost(postToEdit.id, {
+        caption: data.caption,
+        postType: data.postType,
+      })
+      console.log('Update result:', { success, error })
+
+      if (success) {
+        // Update post in state
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postToEdit.id
+              ? { ...post, caption: data.caption, postType: data.postType, updatedAt: new Date().toISOString() }
+              : post
+          )
+        )
+        setEditModalOpen(false)
+        setPostToEdit(null)
+      } else {
+        console.error('Update failed:', error)
+        alert('Failed to update post: ' + (error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error updating post:', error)
+      alert('Error updating post')
+    } finally {
+      setIsEditingPost(false)
     }
   }
 
@@ -218,8 +301,8 @@ export function Community() {
                     onUnlike={handleUnlike}
                     onShare={(postId) => console.log('Share', postId)}
                     onReport={(postId) => console.log('Report', postId)}
-                    onEdit={(postId) => console.log('Edit', postId)}
-                    onDelete={(postId) => console.log('Delete', postId)}
+                    onEdit={handleEditPost}
+                    onDelete={handleDeletePost}
                   />
                 ))}
               </div>
@@ -250,6 +333,37 @@ export function Community() {
         onCreatePost={handleCreatePost}
         isLoading={isCreatingPost}
       />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false)
+          setPostToDelete(null)
+        }}
+        onConfirm={confirmDeletePost}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Edit Post Modal */}
+      {postToEdit && (
+        <CreatePostModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setPostToEdit(null)
+          }}
+          onCreatePost={handleUpdatePost}
+          isLoading={isEditingPost}
+          initialCaption={postToEdit.caption}
+          initialPostType={postToEdit.postType}
+          isEdit
+        />
+      )}
     </>
   )
 }

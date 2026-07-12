@@ -11,7 +11,7 @@ import { formatPKR } from '../utils/formatters'
 import { fetchArenas, fetchPlayerBookings, fetchOwnerRevenue, fetchRecentActivity, fetchFavoritesForUser } from '../services/supabaseData'
 import type { Arena, Booking, ActivityItem } from '../types'
 
-export function Home() {
+export default function Home() {
   const { user } = useAuth()
   const rootRef = useRef<HTMLElement>(null)
 
