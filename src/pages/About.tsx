@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Zap, Target, Heart, Globe } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { ArrowLeft, Zap, Target, Heart, Globe, Mail, Github, Linkedin, ExternalLink } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import Aurora from '../components/ui/Aurora'
-import ProfileCard from '../components/ui/ProfileCard'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { BtnLink } from '../components/ui/Btn'
@@ -23,23 +23,25 @@ const fadeUp: Variants = {
 const CREATORS = [
   {
     name: 'Ubaid Ur Rehman Dar',
-    title: 'Co-Founder',
-    handle: 'ubaiddar',
-    status: 'Building ArenaGo',
+    title: 'Co-Founder & Developer',
+    handle: '@ubaiddar',
+    bio: 'Full-stack engineer obsessed with product. Built ArenaGo from scratch because booking a turf should take 30 seconds, not 30 minutes.',
     avatarUrl: ubaidImg,
     email: 'ubaidurrehmaan2004@gmail.com',
     linkedin: 'https://www.linkedin.com/in/ubaid-ur-rehman-dar-74a56429a/',
     github: 'https://github.com/UbaidUrRehmaanDar',
+    tag: 'Engineer',
   },
   {
     name: 'Rehan Abrar Jatt',
-    title: 'Co-Founder',
-    handle: 'rehanjatt',
-    status: 'Building ArenaGo',
+    title: 'Co-Founder & Designer',
+    handle: '@rehanjatt',
+    bio: 'Design & strategy. Believes Pakistani sports culture deserves a platform that looks and feels as serious as the game itself.',
     avatarUrl: rehanImg,
     email: 'rehanabrar99@gmail.com',
     linkedin: 'https://www.linkedin.com/in/rehan-abrar',
     github: 'https://github.com/Rehan-Abrar',
+    tag: 'Design',
   },
 ]
 
@@ -66,9 +68,193 @@ const VALUES = [
   },
 ]
 
-export default function About() {
-  const navigate = useNavigate()
+// ── Creator Card ────────────────────────────────────────────────────────────
 
+function CreatorCard({ creator, index }: { creator: typeof CREATORS[0]; index: number }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <>
+      <motion.div
+        custom={index}
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        className="group relative"
+      >
+        {/* lime glow behind card */}
+        <div className="absolute -inset-px rounded-2xl bg-lime/0 group-hover:bg-lime/5 transition-colors duration-500 pointer-events-none" />
+
+        <div className="relative rounded-2xl border border-line bg-turf overflow-hidden hover:border-lime/30 transition-colors duration-300">
+
+          {/* top accent strip */}
+          <div className="h-1 w-full bg-gradient-to-r from-lime/60 via-lime to-lime/40" />
+
+          {/* photo section */}
+          <div className="relative overflow-hidden bg-slate" style={{ height: 300 }}>
+            <img
+              src={creator.avatarUrl}
+              alt={creator.name}
+              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
+            />
+            {/* gradient overlay — bottom fade into card */}
+            <div className="absolute inset-0 bg-gradient-to-t from-turf via-turf/30 to-transparent" />
+
+            {/* tag chip */}
+            <span className="absolute top-4 right-4 font-mono text-[10px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-full bg-ground/80 backdrop-blur-sm border border-lime/30 text-lime">
+              {creator.tag}
+            </span>
+          </div>
+
+          {/* content */}
+          <div className="px-5 pt-4 pb-5 space-y-4">
+            {/* name block */}
+            <div>
+              <p className="font-mono text-[11px] text-mist uppercase tracking-[0.18em] mb-1">{creator.handle}</p>
+              <h3 className="font-display text-2xl text-chalk leading-tight">{creator.name}</h3>
+              <p className="text-sm text-lime font-medium mt-0.5">{creator.title}</p>
+            </div>
+
+            {/* bio */}
+            <p className="text-sm text-mist leading-relaxed font-body">{creator.bio}</p>
+
+            {/* divider */}
+            <div className="h-px bg-line" />
+
+            {/* action row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <a
+                  href={creator.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate border border-line text-mist hover:text-lime hover:border-lime/30 transition-colors duration-150"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin size={14} />
+                </a>
+                <a
+                  href={creator.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate border border-line text-mist hover:text-lime hover:border-lime/30 transition-colors duration-150"
+                  aria-label="GitHub"
+                >
+                  <Github size={14} />
+                </a>
+                <a
+                  href={`mailto:${creator.email}`}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate border border-line text-mist hover:text-lime hover:border-lime/30 transition-colors duration-150"
+                  aria-label="Email"
+                >
+                  <Mail size={14} />
+                </a>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lime/10 border border-lime/20 text-lime text-xs font-medium hover:bg-lime/20 transition-colors duration-150"
+              >
+                Contact
+                <ExternalLink size={11} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Contact modal */}
+      <AnimatePresence>
+        {expanded && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setExpanded(false)}
+              className="fixed inset-0 z-40 bg-ground/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 16 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setExpanded(false)}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-xs bg-turf border border-line rounded-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.6)]"
+              >
+                {/* header strip */}
+                <div className="h-1 w-full bg-gradient-to-r from-lime/60 via-lime to-lime/40" />
+
+                <div className="p-5">
+                  {/* avatar + name */}
+                  <div className="flex items-center gap-4 mb-5">
+                    <img src={creator.avatarUrl} alt={creator.name} className="w-14 h-14 rounded-xl object-cover object-top border border-line" />
+                    <div>
+                      <h3 className="font-display text-xl text-chalk leading-tight">{creator.name}</h3>
+                      <p className="text-lime text-xs font-medium mt-0.5">{creator.title}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] mb-3">Get in touch</p>
+
+                  <div className="space-y-2">
+                    <a href={`mailto:${creator.email}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-slate border border-line hover:border-lime/30 transition-colors group"
+                    >
+                      <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-lime/10 text-lime group-hover:bg-lime/20 transition-colors shrink-0">
+                        <Mail size={14} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-mist font-mono">Email</p>
+                        <p className="text-chalk text-xs truncate font-body">{creator.email}</p>
+                      </div>
+                    </a>
+                    <a href={creator.linkedin} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-slate border border-line hover:border-lime/30 transition-colors group"
+                    >
+                      <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-lime/10 text-lime group-hover:bg-lime/20 transition-colors shrink-0">
+                        <Linkedin size={14} />
+                      </span>
+                      <div>
+                        <p className="text-[10px] text-mist font-mono">LinkedIn</p>
+                        <p className="text-chalk text-xs font-body">Connect</p>
+                      </div>
+                    </a>
+                    <a href={creator.github} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-slate border border-line hover:border-lime/30 transition-colors group"
+                    >
+                      <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-lime/10 text-lime group-hover:bg-lime/20 transition-colors shrink-0">
+                        <Github size={14} />
+                      </span>
+                      <div>
+                        <p className="text-[10px] text-mist font-mono">GitHub</p>
+                        <p className="text-chalk text-xs font-body">View code</p>
+                      </div>
+                    </a>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(false)}
+                    className="mt-4 w-full py-2.5 rounded-xl border border-line text-mist text-sm hover:text-chalk hover:border-chalk/20 transition-colors duration-150"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+export default function About() {
   return (
     <div className="relative min-h-screen bg-ground">
 
@@ -93,14 +279,13 @@ export default function About() {
         <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center pt-20 md:pt-0">
 
           {/* mobile back button */}
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
+          <a
+            href="/"
             className="absolute top-24 left-4 md:hidden flex items-center justify-center w-9 h-9 rounded-full bg-slate/80 border border-line text-chalk z-20"
             aria-label="Go back"
           >
             <ArrowLeft size={16} />
-          </button>
+          </a>
 
           <motion.p
             custom={0} variants={fadeUp} initial="hidden" animate="show"
@@ -213,34 +398,9 @@ export default function About() {
               <h2 className="font-display text-display-md text-chalk">WHO BUILT THIS</h2>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 max-w-2xl mx-auto">
-              {CREATORS.map(({ name, title, handle, status, avatarUrl, email, linkedin, github }, i) => (
-                <motion.div
-                  key={name}
-                  custom={i} variants={fadeUp} initial="hidden" whileInView="show"
-                  viewport={{ once: true }}
-                  className="flex flex-col gap-4"
-                >
-                  <ProfileCard
-                    name={name}
-                    title={title}
-                    handle={handle}
-                    status={status}
-                    avatarUrl={avatarUrl}
-                    miniAvatarUrl={avatarUrl}
-                    contactText="Contact"
-                    showUserInfo={true}
-                    enableTilt={true}
-                    enableMobileTilt={false}
-                    behindGlowEnabled={true}
-                    behindGlowColor="rgba(200, 255, 0, 0.67)"
-                    behindGlowSize="50%"
-                    innerGradient="linear-gradient(145deg, #c8ff0015 0%, #1a1f1a8c 100%)"
-                    email={email}
-                    linkedin={linkedin}
-                    github={github}
-                  />
-                </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-2xl mx-auto">
+              {CREATORS.map((creator, i) => (
+                <CreatorCard key={creator.name} creator={creator} index={i} />
               ))}
             </div>
           </div>
