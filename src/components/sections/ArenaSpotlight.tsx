@@ -1,5 +1,5 @@
 import useEmblaCarousel from 'embla-carousel-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArenaCard } from '../ui/ArenaCard'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
@@ -15,9 +15,6 @@ export function ArenaSpotlight() {
   useEffect(() => {
     fetchArenas().then((data) => setFeatured(data.filter((a) => a.isFeatured)))
   }, [])
-
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
 
   useEffect(() => {
     if (!emblaApi) return
@@ -45,23 +42,7 @@ export function ArenaSpotlight() {
         <h2 className="font-display text-[clamp(2rem,7vw,5rem)] text-chalk">FEATURED ARENAS</h2>
       </motion.div>
       <div className="relative">
-        <button
-          type="button"
-          onClick={scrollPrev}
-          className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 z-10 font-display text-5xl text-chalk hover:text-lime transition-colors duration-200"
-          aria-label="Previous"
-        >
-          &lt;
-        </button>
-        <button
-          type="button"
-          onClick={scrollNext}
-          className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 z-10 font-display text-5xl text-chalk hover:text-lime transition-colors duration-200"
-          aria-label="Next"
-        >
-          &gt;
-        </button>
-        <div className="overflow-visible" ref={emblaRef}>
+        <div className="overflow-visible cursor-grab active:cursor-grabbing select-none" ref={emblaRef}>
           <div className="flex items-stretch gap-6 px-8 md:px-24">
             {featured.map((arena, i) => (
               <div

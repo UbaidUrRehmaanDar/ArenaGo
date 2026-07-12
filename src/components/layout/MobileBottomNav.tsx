@@ -14,6 +14,7 @@ const PLAYER_NAV = [
 
 const PUBLIC_NAV = [
   { href: '/arenas',     label: 'Explore', icon: Search        },
+  { href: '/community',  label: 'Community', icon: Users       },
   { href: '/promotions', label: 'Offers',  icon: CalendarCheck },
 ]
 
@@ -30,7 +31,7 @@ export function MobileBottomNav() {
 
   // Only show on relevant routes
   const playerRoutes = ['/home', '/arenas', '/community', '/bookings', '/favourites', '/profile', '/promotions', '/activity', '/notifications']
-  const publicRoutes = ['/arenas', '/promotions', '/about']
+  const publicRoutes = ['/arenas', '/community', '/promotions', '/about']
   const validRoutes = user ? playerRoutes : publicRoutes
   const shouldShow = validRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
   if (!shouldShow) return null

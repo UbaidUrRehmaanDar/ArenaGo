@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { MessageCircle, Send, Trash2, Edit2, X, Loader2 } from 'lucide-react'
 import type { CommunityComment } from '../../types'
 import { cn } from '../../utils/formatters'
@@ -113,35 +114,47 @@ export function CommentsSection({
       </div>
 
       {/* Add Comment */}
-      <div className="flex gap-2 mb-5">
-        <input
-          type="text"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Write a comment…"
-          className="flex-1 px-4 py-2.5 bg-slate border border-line rounded-xl text-sm text-chalk placeholder:text-mist/50 focus:outline-none focus:ring-2 focus:ring-lime/40 focus:border-lime/30 transition-all duration-200"
-          disabled={submitting}
-          maxLength={300}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-        />
-        <button
-          onClick={handleAddComment}
-          disabled={submitting || !newComment.trim()}
-          className={cn(
-            'w-10 h-10 flex items-center justify-center rounded-xl shrink-0 transition-all duration-200',
-            submitting || !newComment.trim()
-              ? 'bg-slate text-mist cursor-not-allowed'
-              : 'bg-lime text-on-lime hover:brightness-110 active:scale-95'
-          )}
-          aria-label="Post comment"
-        >
-          {submitting ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Send size={16} />
-          )}
-        </button>
-      </div>
+      {currentUserId ? (
+        <div className="flex gap-2 mb-5">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write a comment…"
+            className="flex-1 px-4 py-2.5 bg-slate border border-line rounded-xl text-sm text-chalk placeholder:text-mist/50 focus:outline-none focus:ring-2 focus:ring-lime/40 focus:border-lime/30 transition-all duration-200"
+            disabled={submitting}
+            maxLength={300}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+          />
+          <button
+            onClick={handleAddComment}
+            disabled={submitting || !newComment.trim()}
+            className={cn(
+              'w-10 h-10 flex items-center justify-center rounded-xl shrink-0 transition-all duration-200',
+              submitting || !newComment.trim()
+                ? 'bg-slate text-mist cursor-not-allowed'
+                : 'bg-lime text-on-lime hover:brightness-110 active:scale-95'
+            )}
+            aria-label="Post comment"
+          >
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Send size={16} />
+            )}
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-3 mb-5 rounded-xl border border-line bg-slate/60 px-4 py-3">
+          <p className="text-sm font-body text-mist">Log in to join the conversation.</p>
+          <Link
+            to="/login"
+            className="shrink-0 text-sm font-semibold text-lime hover:underline"
+          >
+            Log in
+          </Link>
+        </div>
+      )}
 
       {/* Comments List */}
       {loading ? (

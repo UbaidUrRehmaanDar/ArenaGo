@@ -32,6 +32,7 @@ interface NavItem {
 
 const PUBLIC_NAV_LINKS: NavItem[] = [
   { href: '/arenas',        label: 'Arenas',      icon: MapPin  },
+  { href: '/community',     label: 'Community',   icon: Users   },
   { href: '/promotions',    label: 'Promotions',  icon: Tag     },
   { href: '/#how-it-works', label: 'How It Works', icon: Compass },
 ]

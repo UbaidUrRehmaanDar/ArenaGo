@@ -68,6 +68,16 @@ function PublicOnlyRoute({ children }: { children: ReactNode }) {
   return children
 }
 
+/** Redirects unauthenticated users to login, preserving where they were headed. */
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+  return children
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
@@ -83,17 +93,17 @@ function AnimatedRoutes() {
           <Route path="/home" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/community" element={<Community />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/arenas" element={<ArenaListings />} />
           <Route path="/arenas/:slug" element={<ArenaDetail />} />
           <Route path="/arenas/:slug/schedule" element={<ArenaSchedule />} />
-          <Route path="/booking" element={<BookingFlow />} />
-          <Route path="/booking/confirmed" element={<BookingConfirmed />} />
+          <Route path="/booking" element={<ProtectedRoute><BookingFlow /></ProtectedRoute>} />
+          <Route path="/booking/confirmed" element={<ProtectedRoute><BookingConfirmed /></ProtectedRoute>} />
           <Route path="/promotions" element={<Promotions />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/bookings" element={<PlayerBookings />} />
-          <Route path="/favourites" element={<Favourites />} />
-          <Route path="/activity" element={<Activity />} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/bookings" element={<ProtectedRoute><PlayerBookings /></ProtectedRoute>} />
+          <Route path="/favourites" element={<ProtectedRoute><Favourites /></ProtectedRoute>} />
+          <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
           <Route path="/dashboard/owner/*" element={<OwnerDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

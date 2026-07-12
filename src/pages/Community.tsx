@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Search, Loader2, LogIn } from 'lucide-react'
 import { Navbar } from '../components/layout/Navbar'
 import { PostCard } from '../components/ui/PostCard'
 import { CreatePostModal } from '../components/ui/CreatePostModal'
-import { Btn } from '../components/ui/Btn'
+import { Btn, BtnLink } from '../components/ui/Btn'
 import { useAuth } from '../context/AuthContext'
+import { showToast } from '../components/ui/Toast'
 import { fetchPosts, likePost, unlikePost, createPost, deletePost, updatePost } from '../services/communityData'
 import type { CommunityPost, CommunityFilter, PostType } from '../types'
 import { cn } from '../utils/formatters'
@@ -147,7 +149,10 @@ export default function Community() {
   }
 
   const handleLike = async (postId: string) => {
-    if (!user) return
+    if (!user) {
+      showToast({ type: 'info', message: 'Log in to like posts' })
+      return
+    }
 
     const { success } = await likePost(postId)
     if (success) {
@@ -160,7 +165,10 @@ export default function Community() {
   }
 
   const handleUnlike = async (postId: string) => {
-    if (!user) return
+    if (!user) {
+      showToast({ type: 'info', message: 'Log in to like posts' })
+      return
+    }
 
     const { success } = await unlikePost(postId)
     if (success) {
@@ -192,7 +200,7 @@ export default function Community() {
               {total} {total === 1 ? 'post' : 'posts'}
             </p>
           </div>
-          {user && (
+          {user ? (
             <Btn
               onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center gap-2 shrink-0"
@@ -200,8 +208,28 @@ export default function Community() {
               <Plus size={17} />
               <span>New Post</span>
             </Btn>
+          ) : (
+            <BtnLink to="/login" className="flex items-center gap-2 shrink-0">
+              <LogIn size={17} />
+              <span>Log In to Post</span>
+            </BtnLink>
           )}
         </div>
+
+        {/* ── Guest notice ──────────────────────────────────── */}
+        {!user && (
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-line bg-slate/60 px-4 py-3">
+            <p className="text-sm font-body text-mist">
+              You're browsing as a guest. Log in to like, comment, and post.
+            </p>
+            <Link
+              to="/login"
+              className="shrink-0 text-sm font-semibold text-lime hover:underline"
+            >
+              Log in
+            </Link>
+          </div>
+        )}
 
         {/* ── Search ─────────────────────────────────────────── */}
         <div data-community-search className="relative mb-4">

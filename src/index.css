@@ -59,6 +59,16 @@
   --color-scrollbar-thumb-hover: 72 102 0;
 }
 
+::selection {
+  background: rgb(var(--color-lime));
+  color: rgb(var(--color-on-lime));
+}
+
+::-moz-selection {
+  background: rgb(var(--color-lime));
+  color: rgb(var(--color-on-lime));
+}
+
 @layer base {
   html {
     scroll-behavior: auto;
