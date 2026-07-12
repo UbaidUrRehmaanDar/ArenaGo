@@ -423,3 +423,25 @@ Styled globally in `src/index.css`:
 | Date Utils | date-fns 4 |
 | Marquee | react-fast-marquee |
 | Misc | clsx, tailwind-merge, react-countup, react-intersection-observer |
+
+---
+
+## 11. Planned Features
+
+### 11.1 Interactive Map View (Arena Listings)
+
+**Status:** Removed from current build — placeholder SVG grid was removed in July 2026.
+
+**Intent:** A sticky right-panel map on the `/arenas` listings page showing all arenas as interactive pin markers on a real map. Hovering an `ArenaCard` in the list highlights the corresponding pin on the map, and clicking a pin opens the arena's detail card inline.
+
+**Design spec:**
+- The map panel occupies `w-[30%]` of the listings layout on `xl` screens (desktop only)
+- Pin markers use the `lime` accent color (`bg-lime`), scaling to `scale-150` with `animate-pulse-dot` on hover
+- The active/hovered arena is tracked via `hoveredArena` state shared between the list and map
+- Background uses `var(--color-map-bg)` token (dark green-tinted near-black in dark mode)
+
+**Implementation notes:**
+- Replace the SVG grid placeholder with a real map library (Mapbox GL JS or Leaflet with a dark custom tile style matching the ArenaGo color tokens)
+- Each `Arena` record already has `location.coordinates: { lat, lng }` — the data layer is ready
+- The `mapMarkers` array was computed from `allArenas` (with fallback `top`/`left` % positions for the placeholder) — swap these for real lat/lng projection
+- Consider `react-map-gl` (Mapbox wrapper) for React integration, using a custom dark map style built with the `ground`/`turf`/`lime` tokens

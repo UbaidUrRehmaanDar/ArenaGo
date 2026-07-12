@@ -36,7 +36,6 @@ export default function ArenaListings() {
   const [cityOptions, setCityOptions] = useState<string[]>([])
   const [extra, setExtra] = useState<string | null>(null)
   const [budget, setBudget] = useState<string | null>(null)
-  const [hoveredArena, setHoveredArena] = useState<string | null>(null)
   const [allArenas, setAllArenas] = useState<Arena[]>([])
   const searchCircleRef = useRef<HTMLSpanElement>(null)
 
@@ -104,16 +103,7 @@ export default function ArenaListings() {
     return list.sort((a, b) => b.rating - a.rating)
   }, [filteredBase, sort])
 
-  const mapMarkers = allArenas.map((a, i) => ({
-    id: a.id,
-    abbr: a.name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .slice(0, 3),
-    top: 15 + ((i * 37) % 70),
-    left: 10 + ((i * 53) % 75),
-  }))
+  // Map preview removed — planned for future release (see DESIGN.md § Planned Features)
 
   return (
     <>
@@ -189,8 +179,7 @@ export default function ArenaListings() {
             </div>
           </section>
 
-          <div className="flex gap-4 md:gap-8">
-            <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
               {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   {Array.from({ length: 6 }).map((_, i) => (
@@ -198,64 +187,14 @@ export default function ArenaListings() {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 md:gap-6 items-stretch">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 items-stretch">
                   {filtered.map((arena) => (
-                    <div
-                      key={arena.id}
-                      className="flex"
-                      onMouseEnter={() => setHoveredArena(arena.id)}
-                      onMouseLeave={() => setHoveredArena(null)}
-                    >
-                      <ArenaCard arena={arena} className="w-full" />
-                    </div>
+                    <ArenaCard key={arena.id} arena={arena} className="w-full" />
                   ))}
                 </div>
               )}
             </div>
-
-            <aside className="hidden xl:block w-[30%] flex-shrink-0">
-              <div className="sticky top-24 h-[calc(100vh-120px)] bg-slate rounded-sm border border-line overflow-hidden">
-                <div className="relative w-full h-full bg-[rgb(var(--color-map-bg))]">
-                  <svg className="absolute inset-0 w-full h-full opacity-20 text-line">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <line
-                        key={`h-${i}`}
-                        x1="0"
-                        y1={`${i * 12.5}%`}
-                        x2="100%"
-                        y2={`${i * 12.5}%`}
-                        stroke="currentColor"
-                      />
-                    ))}
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <line
-                        key={`v-${i}`}
-                        x1={`${i * 12.5}%`}
-                        y1="0"
-                        x2={`${i * 12.5}%`}
-                        y2="100%"
-                        stroke="currentColor"
-                      />
-                    ))}
-                  </svg>
-                  {mapMarkers.map((m) => (
-                    <div
-                      key={m.id}
-                      className={cn(
-                        'absolute w-3 h-3 rounded-full bg-lime transition-transform',
-                        hoveredArena === m.id && 'scale-150 animate-pulse-dot'
-                      )}
-                      style={{ top: `${m.top}%`, left: `${m.left}%` }}
-                      title={m.abbr}
-                    />
-                  ))}
-                  <p className="absolute bottom-4 left-4 font-mono text-[10px] text-mist">
-                    Map preview
-                  </p>
-                </div>
-              </div>
-            </aside>
-          </div>
+        </div>
         </div>
       </PageWrapper>
       <Footer />
