@@ -94,9 +94,9 @@ function AnimatedRoutes() {
           <Route path="/about" element={<About />} />
           <Route path="/community" element={<Community />} />
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-          <Route path="/arenas" element={<ArenaListings />} />
-          <Route path="/arenas/:slug" element={<ArenaDetail />} />
-          <Route path="/arenas/:slug/schedule" element={<ArenaSchedule />} />
+          <Route path="/arenas" element={<ProtectedRoute><ArenaListings /></ProtectedRoute>} />
+          <Route path="/arenas/:slug" element={<ProtectedRoute><ArenaDetail /></ProtectedRoute>} />
+          <Route path="/arenas/:slug/schedule" element={<ProtectedRoute><ArenaSchedule /></ProtectedRoute>} />
           <Route path="/booking" element={<ProtectedRoute><BookingFlow /></ProtectedRoute>} />
           <Route path="/booking/confirmed" element={<ProtectedRoute><BookingConfirmed /></ProtectedRoute>} />
           <Route path="/promotions" element={<Promotions />} />
