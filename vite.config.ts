@@ -10,13 +10,7 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -42,6 +36,8 @@ export default defineConfig({
       },
     },
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  esbuild: { drop: ['console', 'debugger'] } as any,
   server: {
     hmr: {
       overlay: false,
