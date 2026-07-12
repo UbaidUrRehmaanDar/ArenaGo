@@ -69,6 +69,17 @@
   color: rgb(var(--color-on-lime));
 }
 
+/* On lime-background sections the lime selection is invisible — invert it. */
+.bg-lime::selection {
+  background: rgb(var(--color-ground));
+  color: rgb(var(--color-lime));
+}
+
+.bg-lime ::selection {
+  background: rgb(var(--color-ground));
+  color: rgb(var(--color-lime));
+}
+
 @layer base {
   html {
     scroll-behavior: auto;
