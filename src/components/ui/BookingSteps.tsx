@@ -5,7 +5,7 @@ import { createSupabaseBooking } from '../../services/supabaseData'
 import { formatPKR, formatDate, formatTime } from '../../utils/formatters'
 import { useAuth } from '../../context/AuthContext'
 import { Btn } from './Btn'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface BookingStepsProps {
   open: boolean
@@ -49,6 +49,8 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [bookingError, setBookingError] = useState('')
+  // Guards against the effect double-firing (unstable deps, StrictMode, etc.)
+  const isSubmittingRef = useRef(false)
   const {
     step,
     slot,
@@ -63,35 +65,45 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
 
   useEffect(() => {
     const activeSlots = slots.length > 0 ? slots : slot ? [slot] : []
-    if (step === 'confirming' && activeSlots.length > 0 && user) {
-      const activeUser = user
-      const bookingSlots = activeSlots
-      async function makeBooking() {
-        setBookingError('')
-        for (const activeSlot of bookingSlots) {
-          const res = await createSupabaseBooking({
-            playerId: activeUser.id,
-            arenaId: activeSlot.arenaId,
-            slotId: activeSlot.id,
-            courtId: activeSlot.courtId || '',
-            date: activeSlot.date,
-            startTime: activeSlot.startTime,
-            endTime: activeSlot.endTime,
-            price: activeSlot.price,
-          })
-          if (!res.success) {
-            setBookingError(res.error || 'Failed to confirm booking.')
-            setStep('selected')
-            return
-          }
+    if (step !== 'confirming' || activeSlots.length === 0 || !user) return
+    // Bail out immediately if a submission is already in flight
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
+
+    const activeUser = user
+    const bookingSlots = activeSlots
+
+    async function makeBooking() {
+      setBookingError('')
+      let lastReference = ''
+      for (const activeSlot of bookingSlots) {
+        const res = await createSupabaseBooking({
+          playerId: activeUser.id,
+          arenaId: activeSlot.arenaId,
+          slotId: activeSlot.id,
+          courtId: activeSlot.courtId || '',
+          sportId: activeSlot.sportId,
+          date: activeSlot.date,
+          startTime: activeSlot.startTime,
+          endTime: activeSlot.endTime,
+          price: activeSlot.price,
+        })
+        if (!res.success) {
+          setBookingError(res.error || 'Failed to confirm booking.')
+          setStep('selected')
+          isSubmittingRef.current = false
+          return
         }
-        if (bookingSlots.length > 0) {
-          completeBooking()
-        }
+        if (res.reference) lastReference = res.reference
       }
-      makeBooking()
+      completeBooking(lastReference)
+      // Reset guard only after completing so it can be used for a future booking
+      isSubmittingRef.current = false
     }
-  }, [step, slot, slots, user, completeBooking, setStep])
+
+    makeBooking()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
 
   if (!open) return null
 

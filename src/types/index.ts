@@ -47,6 +47,7 @@ export interface Slot {
   id: string
   arenaId: string
   courtId?: string
+  sportId?: string
   date: string
   startTime: string
   endTime: string
@@ -252,15 +253,6 @@ export interface CommunityPost {
   isLikedByCurrentUser?: boolean
 }
 
-export interface PostImage {
-  id: string
-  postId: string
-  imageUrl: string
-  altText?: string
-  sortOrder: number
-  createdAt: string
-}
-
 export interface CommunityComment {
   id: string
   postId: string
@@ -272,24 +264,6 @@ export interface CommunityComment {
   createdAt: string
   updatedAt: string
   isDeleted: boolean
-}
-
-export interface CommunityLike {
-  id: string
-  postId: string
-  userId: string
-  createdAt: string
-}
-
-export type ReportStatus = 'pending' | 'reviewed' | 'resolved' | 'dismissed'
-
-export interface CommunityReport {
-  id: string
-  postId: string
-  reporterId: string
-  reason: string
-  status: ReportStatus
-  createdAt: string
 }
 
 export type CommunityFilter = 'latest' | 'popular' | 'players' | 'arenas' | 'tournaments'

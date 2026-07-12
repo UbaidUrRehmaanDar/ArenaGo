@@ -64,14 +64,14 @@ export default function ArenaDetail() {
   const [loading, setLoading] = useState(true)
 
   const { user } = useAuth()
-  const { selectSlot, slots: selectedSlots, step, setStep } = useBooking()
+  const { selectSlot, slots: selectedSlots, step, setStep, resetBooking } = useBooking()
 
   const [heroImage, setHeroImage] = useState(0)
   const [favourite, setFavourite] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showAllReviews, setShowAllReviews] = useState(false)
-  const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i))
+  const days = Array.from({ length: 30 }, (_, i) => addDays(new Date(), i))
   const [selectedDay, setSelectedDay] = useState(0)
   const selectedDate = format(days[selectedDay], 'yyyy-MM-dd')
 
@@ -107,6 +107,14 @@ export default function ArenaDetail() {
     }
     loadSlots()
   }, [arena, selectedDate])
+
+  // Re-fetch slots after a booking is confirmed so booked slots grey out immediately
+  useEffect(() => {
+    if (step !== 'confirmed' || !arena) return
+    fetchSlotsForArenaDate(arena.id, selectedDate).then((slots) => {
+      setDaySlots(slots as Slot[])
+    })
+  }, [step])
 
   if (loading) return <LoadingState message="Loading arena..." />
 
@@ -393,7 +401,18 @@ export default function ArenaDetail() {
             open={drawerOpen}
             onClose={() => {
               setDrawerOpen(false)
-              if (step === 'confirmed') setStep('idle')
+              if (step === 'confirmed') {
+                // Optimistically grey out the confirmed slots before the re-fetch arrives
+                setDaySlots((prev) =>
+                  prev.map((s) =>
+                    selectedSlots.some((sel) => sel.id === s.id)
+                      ? { ...s, status: 'booked' as const }
+                      : s
+                  )
+                )
+                resetBooking()
+                setStep('idle')
+              }
             }}
           />
         )}

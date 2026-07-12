@@ -16,7 +16,7 @@ interface BookingContextValue extends BookingState {
   selectSlot: (arenaId: string, arenaName: string, slot: Slot) => Slot[]
   clearSlot: () => void
   startConfirm: () => void
-  completeBooking: () => void
+  completeBooking: (reference: string) => void
   resetBooking: () => void
   setStep: (step: BookingStep) => void
 }
@@ -60,9 +60,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
   const startConfirm = () => setState((s) => ({ ...s, step: 'confirming' }))
 
-  const completeBooking = () => {
-    const ref = `ARG-2024-${String(Math.floor(Math.random() * 90000) + 10000)}`
-    setState((s) => ({ ...s, step: 'confirmed', reference: ref }))
+  const completeBooking = (reference: string) => {
+    setState((s) => ({ ...s, step: 'confirmed', reference }))
   }
 
   const resetBooking = () => setState(initialState)

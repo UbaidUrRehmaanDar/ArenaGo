@@ -622,25 +622,46 @@ export async function fetchAverageRating(arenaId: string): Promise<{ rating: num
 
 export async function fetchSlotsForArenaDate(arenaId: string, dateStr: string): Promise<TimeSlot[]> {
   try {
-    const { data, error } = await supabase
-      .from('time_slots')
-      .select('*, courts!inner(arena_id)')
-      .eq('courts.arena_id', arenaId)
-      .eq('date', dateStr)
+    // Fetch slots and existing confirmed bookings for this arena+date in parallel
+    const [slotsResult, bookingsResult] = await Promise.all([
+      supabase
+        .from('time_slots')
+        .select('*, courts!inner(arena_id, sport_id)')
+        .eq('courts.arena_id', arenaId)
+        .eq('date', dateStr),
+      supabase
+        .from('bookings')
+        .select('time_slot_id')
+        .eq('arena_id', arenaId)
+        .eq('date', dateStr)
+        .eq('status', 'confirmed'),
+    ])
 
-    if (error || !data) return []
+    if (slotsResult.error || !slotsResult.data) return []
 
-    return data.map((row: any) => ({
-      id: row.id,
-      arenaId: arenaId,
-      courtId: row.court_id,
-      date: row.date,
-      startTime: row.start_time.substring(0, 5), // e.g. "18:00:00" -> "18:00"
-      endTime: row.end_time.substring(0, 5),
-      price: row.price,
-      status: row.status as 'available' | 'booked' | 'unavailable',
-      isPeak: Boolean(row.is_peak),
-    }))
+    // Build a set of slot IDs that are already booked in the bookings table
+    // This is the ground truth — the time_slots.status update can lag or be blocked by RLS
+    const bookedSlotIds = new Set(
+      (bookingsResult.data ?? []).map((b: any) => b.time_slot_id).filter(Boolean)
+    )
+
+    return slotsResult.data.map((row: any) => {
+      // A slot is booked if the bookings table says so OR the time_slots row itself says so
+      const isBooked = bookedSlotIds.has(row.id) || row.status === 'booked'
+
+      return {
+        id: row.id,
+        arenaId: arenaId,
+        courtId: row.court_id,
+        sportId: row.courts?.sport_id ?? undefined,
+        date: row.date,
+        startTime: row.start_time.substring(0, 5),
+        endTime: row.end_time.substring(0, 5),
+        price: row.price,
+        status: (isBooked ? 'booked' : row.status) as 'available' | 'booked' | 'unavailable',
+        isPeak: Boolean(row.is_peak),
+      }
+    })
   } catch (err) {
     console.error(err)
     return []
@@ -652,23 +673,31 @@ export async function createSupabaseBooking(params: {
   arenaId: string
   slotId: string
   courtId: string
+  sportId?: string
   date: string
   startTime: string
   endTime: string
   price: number
-}): Promise<{ success: boolean; bookingId?: string; error?: string }> {
+}): Promise<{ success: boolean; bookingId?: string; reference?: string; error?: string }> {
   try {
+    // Generate a unique reference before inserting so the NOT NULL constraint is satisfied
+    const year = new Date().getFullYear()
+    const reference = `ARG-${year}-${String(Math.floor(Math.random() * 900000) + 100000)}`
+
     const { data: bookingData, error: insertError } = await supabase
       .from('bookings')
       .insert({
         customer_id: params.playerId,
+        arena_id: params.arenaId,
         court_id: params.courtId,
+        sport_id: params.sportId ?? null,
         time_slot_id: params.slotId,
         date: params.date,
         start_time: params.startTime + ':00',
         end_time: params.endTime + ':00',
         amount: params.price,
         status: 'confirmed',
+        reference,
       })
       .select()
       .single()
@@ -686,7 +715,7 @@ export async function createSupabaseBooking(params: {
       console.error('Failed to update slot status:', updateError)
     }
 
-    return { success: true, bookingId: bookingData?.id }
+    return { success: true, bookingId: bookingData?.id, reference }
   } catch (err: any) {
     console.error(err)
     return { success: false, error: err.message || 'Unknown error' }

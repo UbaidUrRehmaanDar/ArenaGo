@@ -2,9 +2,6 @@ import { supabase } from '../lib/supabase'
 import type {
   CommunityPost,
   CommunityComment,
-  CommunityLike,
-  CommunityReport,
-  PostImage,
   CommunityFilter,
   PostType,
 } from '../types'
@@ -139,44 +136,55 @@ export async function fetchPostById(postId: string, currentUserId?: string): Pro
 
 /**
  * Creates a new post
+ * Uses auth.uid() to ensure RLS compliance
  */
 export async function createPost(params: {
-  authorId: string
   caption: string
   postType: PostType
   images?: File[]
 }): Promise<{ success: boolean; postId?: string; error?: string }> {
   try {
-    console.log('Creating post with authorId:', params.authorId, 'type:', typeof params.authorId)
-    
+    // Get authenticated user - RLS requires auth.uid() = author_id
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
     const { data: postData, error: postError } = await supabase
       .from('community_posts')
       .insert({
-        author_id: params.authorId,
+        author_id: user.id, // Use actual auth.uid()
         caption: params.caption,
         post_type: params.postType,
       })
       .select()
       .single()
 
-    console.log('Post created:', postData, 'error:', postError)
-
     if (postError) {
+      console.error('Post creation error:', postError)
       return { success: false, error: postError.message }
     }
 
     // Upload images if provided
     if (params.images && params.images.length > 0) {
+      console.log('Uploading', params.images.length, 'images for post', postData.id)
       for (let i = 0; i < params.images.length; i++) {
         const file = params.images[i]
+        console.log('Uploading image', i, file.name, file.type)
         const imageUrl = await uploadPostImage(postData.id, file)
         if (imageUrl) {
-          await supabase.from('community_post_images').insert({
+          console.log('Image uploaded successfully:', imageUrl)
+          const { error: imageInsertError } = await supabase.from('community_post_images').insert({
             post_id: postData.id,
             image_url: imageUrl,
             alt_text: file.name,
             sort_order: i,
           })
+          if (imageInsertError) {
+            console.error('Failed to insert image record:', imageInsertError)
+          }
+        } else {
+          console.error('Failed to upload image', i)
         }
       }
     }
@@ -190,12 +198,21 @@ export async function createPost(params: {
 
 /**
  * Updates an existing post
+ * Uses auth.uid() to ensure RLS compliance
  */
 export async function updatePost(
   postId: string,
   updates: { caption?: string; postType?: PostType }
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Get authenticated user - RLS requires auth.uid() = author_id
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    console.log('Updating post:', postId, 'by user:', user.id)
+
     const payload: Record<string, any> = {}
     if (updates.caption !== undefined) payload.caption = updates.caption
     if (updates.postType !== undefined) payload.post_type = updates.postType
@@ -206,6 +223,7 @@ export async function updatePost(
       .eq('id', postId)
 
     if (error) {
+      console.error('Update post RLS error:', error)
       return { success: false, error: error.message }
     }
 
@@ -217,25 +235,46 @@ export async function updatePost(
 }
 
 /**
- * Soft deletes a post
+ * Deletes a post (hard delete)
+ * Uses auth.uid() to ensure RLS compliance
+ * Using DELETE instead of UPDATE to avoid WITH CHECK RLS issues
  */
 export async function deletePost(postId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('Attempting to delete post:', postId)
-    
+    // Get authenticated user - RLS requires auth.uid() = author_id
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    console.log('Deleting post:', postId, 'by user:', user.id)
+
+    // First verify ownership
+    const { data: postData, error: fetchError } = await supabase
+      .from('community_posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching post for ownership check:', fetchError)
+      return { success: false, error: fetchError.message }
+    }
+
+    console.log('Post author_id:', postData.author_id, 'User ID:', user.id, 'Match:', postData.author_id === user.id)
+
+    // Use DELETE instead of UPDATE to avoid WITH CHECK RLS issues
     const { error } = await supabase
       .from('community_posts')
-      .update({ is_deleted: true })
+      .delete()
       .eq('id', postId)
-
-    console.log('Delete operation result:', { error, postId })
+      .eq('author_id', user.id) // Add explicit author check
 
     if (error) {
-      console.error('Delete error details:', error)
+      console.error('Delete post RLS error:', error)
       return { success: false, error: error.message }
     }
 
-    console.log('Post deleted successfully:', postId)
     return { success: true }
   } catch (err: any) {
     console.error('Error deleting post:', err)
@@ -247,15 +286,21 @@ export async function deletePost(postId: string): Promise<{ success: boolean; er
 
 /**
  * Likes a post
+ * Uses auth.uid() to ensure RLS compliance
  */
-export async function likePost(postId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+export async function likePost(postId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
     // First check if user already liked this post
     const { data: existingLike, error: checkError } = await supabase
       .from('community_likes')
       .select('id')
       .eq('post_id', postId)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found
@@ -267,12 +312,12 @@ export async function likePost(postId: string, userId: string): Promise<{ succes
       return { success: true }
     }
 
-    // Insert new like
-    const { error, count } = await supabase
+    // Insert new like - RLS requires auth.uid() = user_id
+    const { error } = await supabase
       .from('community_likes')
       .insert({
         post_id: postId,
-        user_id: userId,
+        user_id: user.id,
       })
       .select('id')
 
@@ -280,7 +325,7 @@ export async function likePost(postId: string, userId: string): Promise<{ succes
       return { success: false, error: error.message }
     }
 
-    return { success: true, insertedId: count }
+    return { success: true }
   } catch (err: any) {
     console.error('Error liking post:', err)
     return { success: false, error: err.message || 'Unknown error' }
@@ -289,33 +334,21 @@ export async function likePost(postId: string, userId: string): Promise<{ succes
 
 /**
  * Unlikes a post
+ * Uses auth.uid() to ensure RLS compliance
  */
-export async function unlikePost(postId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+export async function unlikePost(postId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // First verify the like exists
-    const { data: existingLike, error: checkError } = await supabase
-      .from('community_likes')
-      .select('id')
-      .eq('post_id', postId)
-      .eq('user_id', userId)
-      .single()
-
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found
-      return { success: false, error: checkError.message }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
     }
 
-    // If not liked, return success (idempotent operation)
-    if (!existingLike) {
-      return { success: true }
-    }
-
-    // Delete the like
-    const { error, count } = await supabase
+    // Delete the like - RLS requires auth.uid() = user_id
+    const { error } = await supabase
       .from('community_likes')
       .delete()
       .eq('post_id', postId)
-      .eq('user_id', userId)
-      .select('id')
+      .eq('user_id', user.id)
 
     if (error) {
       return { success: false, error: error.message }
@@ -380,18 +413,23 @@ export async function fetchComments(postId: string): Promise<CommunityComment[]>
 
 /**
  * Creates a new comment
+ * Uses auth.uid() to ensure RLS compliance
  */
 export async function createComment(params: {
   postId: string
-  authorId: string
   content: string
 }): Promise<{ success: boolean; commentId?: string; error?: string }> {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
     const { data, error } = await supabase
       .from('community_comments')
       .insert({
         post_id: params.postId,
-        author_id: params.authorId,
+        author_id: user.id, // Use actual auth.uid()
         content: params.content,
       })
       .select()
@@ -410,18 +448,28 @@ export async function createComment(params: {
 
 /**
  * Updates an existing comment
+ * Uses auth.uid() to ensure RLS compliance
  */
 export async function updateComment(
   commentId: string,
   content: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    console.log('Updating comment:', commentId, 'by user:', user.id)
+
     const { error } = await supabase
       .from('community_comments')
       .update({ content })
       .eq('id', commentId)
+      .eq('author_id', user.id) // Add explicit author check
 
     if (error) {
+      console.error('Update comment RLS error:', error)
       return { success: false, error: error.message }
     }
 
@@ -433,52 +481,33 @@ export async function updateComment(
 }
 
 /**
- * Soft deletes a comment
+ * Deletes a comment (hard delete)
+ * Uses auth.uid() to ensure RLS compliance
  */
 export async function deleteComment(commentId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    console.log('Deleting comment:', commentId, 'by user:', user.id)
+
+    // Use DELETE instead of UPDATE to avoid WITH CHECK RLS issues
     const { error } = await supabase
       .from('community_comments')
-      .update({ is_deleted: true })
+      .delete()
       .eq('id', commentId)
+      .eq('author_id', user.id) // Add explicit author check
 
     if (error) {
+      console.error('Delete comment RLS error:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true }
   } catch (err: any) {
     console.error('Error deleting comment:', err)
-    return { success: false, error: err.message || 'Unknown error' }
-  }
-}
-
-// ── Reports ───────────────────────────────────────────────────────────────
-
-/**
- * Reports a post
- */
-export async function reportPost(params: {
-  postId: string
-  reporterId: string
-  reason: string
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('community_reports')
-      .insert({
-        post_id: params.postId,
-        reporter_id: params.reporterId,
-        reason: params.reason,
-      })
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (err: any) {
-    console.error('Error reporting post:', err)
     return { success: false, error: err.message || 'Unknown error' }
   }
 }
@@ -493,8 +522,6 @@ export async function uploadPostImage(postId: string, file: File): Promise<strin
     const ext = file.name.split('.').pop() ?? 'jpg'
     const path = `community/${postId}/${Date.now()}.${ext}`
 
-    console.log('Uploading image to bucket: community-images, path:', path)
-
     const { error: uploadError } = await supabase.storage
       .from('community-images')
       .upload(path, file, { upsert: true, contentType: file.type })
@@ -503,7 +530,6 @@ export async function uploadPostImage(postId: string, file: File): Promise<strin
       console.error('Post image upload error:', uploadError)
       // Try to create bucket if it doesn't exist
       if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('not found')) {
-        console.log('Bucket not found, attempting to create...')
         const { error: createError } = await supabase.storage.createBucket('community-images', {
           public: true,
           fileSizeLimit: 5242880, // 5MB
@@ -541,7 +567,6 @@ export async function uploadPostImage(postId: string, file: File): Promise<strin
  */
 export async function deletePostImage(imageUrl: string): Promise<boolean> {
   try {
-    // Extract path from URL
     const url = new URL(imageUrl)
     const pathParts = url.pathname.split('/community-images/')
     if (pathParts.length < 2) return false

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
-import { format } from 'date-fns'
+import { addDays, format } from 'date-fns'
 import { CalendarDays, Clock3, MapPin, Radar, Star } from 'lucide-react'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
@@ -18,14 +18,12 @@ export default function ArenaSchedule() {
   const [loading, setLoading] = useState(true)
   const [selectedDay, setSelectedDay] = useState(0)
   const [slotMap, setSlotMap] = useState<Record<string, Slot[]>>({})
+  const [slotsLoading, setSlotsLoading] = useState(false)
   const [heroImage, setHeroImage] = useState(0)
 
+  // 30-day window
   const days = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => {
-      const date = new Date()
-      date.setDate(date.getDate() + index)
-      return date
-    }),
+    () => Array.from({ length: 30 }, (_, index) => addDays(new Date(), index)),
     []
   )
 
@@ -43,20 +41,17 @@ export default function ArenaSchedule() {
     loadArena()
   }, [slug])
 
+  // Lazy-load: fetch only the selected day, cache in slotMap
   useEffect(() => {
-    async function loadSlots() {
-      if (!arena) return
-      const entries = await Promise.all(
-        days.map(async (day) => {
-          const dateStr = format(day, 'yyyy-MM-dd')
-          const slots = await fetchSlotsForArenaDate(arena.id, dateStr)
-          return [dateStr, slots] as const
-        })
-      )
-      setSlotMap(Object.fromEntries(entries) as Record<string, Slot[]>)
-    }
-    loadSlots()
-  }, [arena, days])
+    if (!arena) return
+    if (slotMap[selectedDate] !== undefined) return   // already cached
+
+    setSlotsLoading(true)
+    fetchSlotsForArenaDate(arena.id, selectedDate).then((slots) => {
+      setSlotMap((prev) => ({ ...prev, [selectedDate]: slots as Slot[] }))
+      setSlotsLoading(false)
+    })
+  }, [arena, selectedDate])
 
   if (loading) {
     return (
@@ -172,13 +167,14 @@ export default function ArenaSchedule() {
                 <h2 className="font-display text-2xl text-chalk">Day picker</h2>
                 <CalendarDays size={18} className="text-lime shrink-0" />
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+
+              {/* Scrollable date strip — works for 30 days */}
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
                 {days.map((day, index) => {
                   const key = format(day, 'yyyy-MM-dd')
-                  const slots = slotMap[key] || []
-                  const available = slots.filter((slot) => slot.status === 'available').length
-                  const booked = slots.filter((slot) => slot.status === 'booked').length
                   const active = selectedDay === index
+                  const cached = slotMap[key]
+                  const available = cached ? cached.filter((s) => s.status === 'available').length : null
 
                   return (
                     <button
@@ -186,21 +182,30 @@ export default function ArenaSchedule() {
                       type="button"
                       onClick={() => setSelectedDay(index)}
                       className={cn(
-                        'rounded-2xl border p-4 text-left transition-colors',
-                        active ? 'border-lime bg-lime/10' : 'border-line bg-slate hover:border-lime/30'
+                        'shrink-0 rounded-2xl border px-3 py-3 text-center transition-colors w-[72px]',
+                        active
+                          ? 'border-lime bg-lime/10'
+                          : 'border-line bg-slate hover:border-lime/30'
                       )}
                     >
-                      <p className="font-display text-xl text-chalk">{format(day, 'EEE')}</p>
-                      <p className="text-xs text-mist font-mono mt-1">{format(day, 'd MMM')}</p>
-                      <div className="mt-3 flex items-center justify-between text-xs font-mono uppercase">
-                        <span className="text-lime">{available} open</span>
-                        <span className="text-mist">{booked} booked</span>
-                      </div>
+                      <p className={cn('text-[10px] font-mono uppercase tracking-widest', active ? 'text-lime' : 'text-mist')}>
+                        {format(day, 'EEE')}
+                      </p>
+                      <p className={cn('font-display text-xl leading-tight mt-0.5', active ? 'text-chalk' : 'text-chalk/70')}>
+                        {format(day, 'd')}
+                      </p>
+                      <p className={cn('text-[10px] font-mono mt-0.5', active ? 'text-mist' : 'text-mist/50')}>
+                        {format(day, 'MMM')}
+                      </p>
+                      {available !== null && (
+                        <p className="text-[9px] font-mono text-lime mt-1">{available} open</p>
+                      )}
                     </button>
                   )
                 })}
               </div>
-              <div className="mt-5 rounded-2xl border border-line bg-slate p-4">
+
+              <div className="mt-4 rounded-2xl border border-line bg-slate p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Selected day</p>
                 <p className="mt-2 text-chalk text-sm">
                   {format(days[selectedDay], 'EEEE, d MMM yyyy')}
@@ -208,15 +213,15 @@ export default function ArenaSchedule() {
                 <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
                   <div className="rounded-xl border border-line bg-ground/80 p-3">
                     <p className="text-mist text-xs font-mono uppercase">Open</p>
-                    <p className="mt-2 text-chalk">{totalAvailable}</p>
+                    <p className="mt-2 text-chalk">{slotsLoading ? '…' : totalAvailable}</p>
                   </div>
                   <div className="rounded-xl border border-line bg-ground/80 p-3">
                     <p className="text-mist text-xs font-mono uppercase">Booked</p>
-                    <p className="mt-2 text-chalk">{totalBooked}</p>
+                    <p className="mt-2 text-chalk">{slotsLoading ? '…' : totalBooked}</p>
                   </div>
                   <div className="rounded-xl border border-line bg-ground/80 p-3">
                     <p className="text-mist text-xs font-mono uppercase">Peak</p>
-                    <p className="mt-2 text-chalk">{peakCount}</p>
+                    <p className="mt-2 text-chalk">{slotsLoading ? '…' : peakCount}</p>
                   </div>
                 </div>
               </div>
@@ -232,7 +237,14 @@ export default function ArenaSchedule() {
               </div>
 
               <div className="mt-5 rounded-2xl border border-line bg-slate p-4 md:p-5">
-                <SlotGrid slots={selectedSlots} compact />
+                {slotsLoading ? (
+                  <div className="flex items-center justify-center py-10 gap-2 text-mist text-sm font-mono">
+                    <span className="w-4 h-4 border-2 border-lime border-t-transparent rounded-full animate-spin" />
+                    Loading slots…
+                  </div>
+                ) : (
+                  <SlotGrid slots={selectedSlots} compact />
+                )}
               </div>
 
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
