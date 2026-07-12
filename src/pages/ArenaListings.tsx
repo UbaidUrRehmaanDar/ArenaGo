@@ -195,7 +195,6 @@ export default function ArenaListings() {
               )}
             </div>
         </div>
-        </div>
       </PageWrapper>
       <Footer />
     </>
