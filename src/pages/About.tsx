@@ -1,5 +1,6 @@
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Zap, Target, Heart, Globe, Mail, Github, Linkedin, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Zap, Target, Heart, Globe, Mail, ExternalLink, Code, User } from 'lucide-react'
+
+
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import Aurora from '../components/ui/Aurora'
@@ -132,7 +133,7 @@ function CreatorCard({ creator, index }: { creator: typeof CREATORS[0]; index: n
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate border border-line text-mist hover:text-lime hover:border-lime/30 transition-colors duration-150"
                   aria-label="LinkedIn"
                 >
-                  <Linkedin size={14} />
+                  <span className="w-3 h-3 rounded-sm bg-lime/60 inline-block" aria-hidden />
                 </a>
                 <a
                   href={creator.github}
@@ -141,7 +142,7 @@ function CreatorCard({ creator, index }: { creator: typeof CREATORS[0]; index: n
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate border border-line text-mist hover:text-lime hover:border-lime/30 transition-colors duration-150"
                   aria-label="GitHub"
                 >
-                  <Github size={14} />
+                  <Code size={14} />
                 </a>
                 <a
                   href={`mailto:${creator.email}`}
@@ -217,7 +218,7 @@ function CreatorCard({ creator, index }: { creator: typeof CREATORS[0]; index: n
                       className="flex items-center gap-3 p-3 rounded-xl bg-slate border border-line hover:border-lime/30 transition-colors group"
                     >
                       <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-lime/10 text-lime group-hover:bg-lime/20 transition-colors shrink-0">
-                        <Linkedin size={14} />
+                        <User size={14} />
                       </span>
                       <div>
                         <p className="text-[10px] text-mist font-mono">LinkedIn</p>
@@ -228,7 +229,7 @@ function CreatorCard({ creator, index }: { creator: typeof CREATORS[0]; index: n
                       className="flex items-center gap-3 p-3 rounded-xl bg-slate border border-line hover:border-lime/30 transition-colors group"
                     >
                       <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-lime/10 text-lime group-hover:bg-lime/20 transition-colors shrink-0">
-                        <Github size={14} />
+                  <Code size={14} />
                       </span>
                       <div>
                         <p className="text-[10px] text-mist font-mono">GitHub</p>
