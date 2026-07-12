@@ -72,7 +72,7 @@ export default function ArenaSchedule() {
   return (
     <>
       <Navbar />
-      <PageWrapper className="pt-20 md:pt-24 pb-16">
+      <PageWrapper className="pt-20 md:pt-24 pb-24">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
           <section className="rounded-[28px] border border-line bg-turf overflow-hidden">
             <div className="grid xl:grid-cols-[1.1fr_0.9fr]">
@@ -141,7 +141,7 @@ export default function ArenaSchedule() {
 
                 <div className="mt-4 rounded-2xl border border-line bg-slate p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Gallery</p>
-                  <div className="mt-3 grid grid-cols-4 gap-2">
+                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {arena.images.slice(0, 4).map((image, index) => (
                       <button
                         key={image}

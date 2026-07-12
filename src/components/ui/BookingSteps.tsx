@@ -124,7 +124,7 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'tween', duration: 0.35 }}
-        className="fixed right-0 top-0 z-50 h-full w-full max-w-md bg-turf border-l border-line p-8 overflow-y-auto"
+        className="fixed right-0 top-0 z-50 h-full w-full max-w-md bg-turf border-l border-line p-5 sm:p-8 overflow-y-auto"
       >
         {step === 'selected' && activeSlots.length > 0 && (
           <div>
@@ -138,11 +138,11 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
                 <p className="text-mist text-[13px] mb-2">Selected slots</p>
                 <div className="space-y-2">
                   {activeSlots.map((activeSlot) => (
-                    <div key={activeSlot.id} className="flex items-center justify-between gap-3 rounded-sm border border-line bg-ground/40 px-3 py-2">
-                      <p className="font-mono text-sm text-chalk">
+                    <div key={activeSlot.id} className="flex items-center justify-between gap-3 rounded-sm border border-line bg-ground/40 px-3 py-2 min-w-0">
+                      <p className="font-mono text-sm text-chalk truncate">
                         {formatDate(activeSlot.date)} · {formatTime(activeSlot.startTime)} – {formatTime(activeSlot.endTime)}
                       </p>
-                      <p className="font-mono text-lime text-sm">{formatPKR(activeSlot.price)}</p>
+                      <p className="font-mono text-lime text-sm shrink-0">{formatPKR(activeSlot.price)}</p>
                     </div>
                   ))}
                 </div>

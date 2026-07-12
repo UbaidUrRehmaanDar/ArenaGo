@@ -19,8 +19,8 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <div className={cn('bg-slate p-5 rounded-sm', className)}>
-      <p className="font-display text-display-md text-lime leading-none">
+    <div className={cn('bg-slate p-5 rounded-sm min-w-0', className)}>
+      <p className="font-display text-display-md text-lime leading-none break-words">
         {value}
         {unit && <span className="text-body-md font-body text-mist ml-1">{unit}</span>}
       </p>

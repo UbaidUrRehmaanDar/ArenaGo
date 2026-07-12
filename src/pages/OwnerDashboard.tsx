@@ -258,7 +258,7 @@ function OwnerAnalytics() {
       {sportData.length > 0 && (
         <div>
           <h2 className="font-display text-sm text-chalk mb-4">SPORT BREAKDOWN</h2>
-          <div className="h-[250px] lg:h-[280px]">
+          <div className="h-[250px] lg:h-[280px] overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
