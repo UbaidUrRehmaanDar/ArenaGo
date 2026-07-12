@@ -10,7 +10,7 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
-    minify: 'esbuild',
+    // Vite 8 defaults to oxc — no minifier override needed
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -36,8 +36,6 @@ export default defineConfig({
       },
     },
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  esbuild: { drop: ['console', 'debugger'] } as any,
   server: {
     hmr: {
       overlay: false,
