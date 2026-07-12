@@ -170,12 +170,12 @@ export default function ArenaDetail() {
               alt={arena.name}
               className="w-full h-full object-cover"
             />
-            <nav className="absolute top-4 left-4 flex items-center gap-1 font-mono text-xs text-mist bg-ground/60 px-3 py-1 rounded-sm" aria-label="Breadcrumb">
-              <Link to="/arenas" className="hover:text-chalk transition-colors">Arenas</Link>
-              <span className="mx-1 opacity-40">&gt;</span>
-              <Link to={`/arenas?sport=${arena.sport}`} className="hover:text-chalk transition-colors">{arena.sport}</Link>
-              <span className="mx-1 opacity-40">&gt;</span>
-              <span className="text-chalk">{arena.name}</span>
+            <nav className="absolute top-4 left-4 hidden sm:flex items-center gap-1 font-mono text-xs text-mist bg-ground/60 px-3 py-1 rounded-sm max-w-[calc(100vw-2rem)]" aria-label="Breadcrumb">
+              <Link to="/arenas" className="hover:text-chalk transition-colors shrink-0">Arenas</Link>
+              <span className="mx-1 opacity-40 shrink-0">&gt;</span>
+              <Link to={`/arenas?sport=${arena.sport}`} className="hover:text-chalk transition-colors shrink-0">{arena.sport}</Link>
+              <span className="mx-1 opacity-40 shrink-0">&gt;</span>
+              <span className="text-chalk truncate min-w-0">{arena.name}</span>
             </nav>
             <div className="absolute top-4 right-4 flex gap-2">
               <button type="button" className="p-2 bg-ground/60 rounded-sm text-chalk">
@@ -338,7 +338,7 @@ export default function ArenaDetail() {
               </div>
             </div>
 
-            <aside className="lg:sticky lg:top-24 lg:self-start">
+            <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
               <div className="bg-slate p-6 rounded-sm border border-line">
                 <h2 className="font-display text-display-md text-chalk mb-6">BOOK A SLOT</h2>
                 <div className="flex gap-1 overflow-x-auto mb-6 pb-2">

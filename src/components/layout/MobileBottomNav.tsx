@@ -39,7 +39,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
       aria-label="Mobile navigation"
     >
       <div className="absolute inset-0 bg-ground/90 backdrop-blur-xl border-t border-line" />

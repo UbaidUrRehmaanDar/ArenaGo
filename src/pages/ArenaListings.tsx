@@ -116,7 +116,7 @@ export default function ArenaListings() {
               <span className="text-lime">IN LAHORE</span>
             </h1>
             <form onSubmit={(e) => e.preventDefault()} className="flex mt-4 md:mt-6 max-w-2xl">
-              <div className="relative flex-1">
+              <div className="relative flex-1 overflow-hidden">
                 <input
                   type="text"
                   value={search}
