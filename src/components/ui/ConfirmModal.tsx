@@ -10,6 +10,7 @@ interface ConfirmModalProps {
   confirmText?: string
   cancelText?: string
   variant?: 'danger' | 'warning' | 'info'
+  error?: string | null
 }
 
 export function ConfirmModal({
@@ -21,6 +22,7 @@ export function ConfirmModal({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   variant = 'danger',
+  error = null,
 }: ConfirmModalProps) {
   if (!isOpen) return null
 
@@ -57,6 +59,9 @@ export function ConfirmModal({
         {/* Content */}
         <div className="p-6">
           <p className="text-chalk/90 text-[15px] leading-relaxed">{message}</p>
+          {error && (
+            <p className="text-red-400 text-sm mt-3">{error}</p>
+          )}
         </div>
 
         {/* Footer */}

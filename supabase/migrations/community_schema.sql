@@ -1,5 +1,5 @@
 -- Community Feature Schema for ArenaGo
--- This migration creates tables for posts, images, comments, likes, and reports
+-- Simplified RLS policies to avoid UUID type mismatches
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -85,21 +85,67 @@ ALTER TABLE community_comments     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_likes        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_reports      ENABLE ROW LEVEL SECURITY;
 
+-- Storage Bucket RLS Policies
+-- Note: These need to be run separately in Supabase SQL Editor as they're storage policies
+
+-- Drop existing storage policies if they exist
+DROP POLICY IF EXISTS "Public images are viewable by everyone" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own images" ON storage.objects;
+
+-- Storage policies for community-images bucket
+CREATE POLICY "Public images are viewable by everyone"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'community-images');
+
+CREATE POLICY "Authenticated users can upload images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'community-images' 
+    AND auth.role() = 'authenticated'
+  );
+
+CREATE POLICY "Users can delete their own images"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'community-images' 
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Drop any existing policies to ensure clean state
+DROP POLICY IF EXISTS "Posts are viewable by everyone" ON community_posts;
+DROP POLICY IF EXISTS "Users can create their own posts" ON community_posts;
+DROP POLICY IF EXISTS "Authors can update their own posts" ON community_posts;
+DROP POLICY IF EXISTS "Admins can update any post" ON community_posts;
+
 -- RLS Policies for community_posts
+
+-- SELECT: Anyone can view non-deleted posts
 CREATE POLICY "Posts are viewable by everyone"
-  ON community_posts FOR SELECT USING (is_deleted = FALSE);
+  ON community_posts FOR SELECT
+  USING (is_deleted = FALSE);
 
-CREATE POLICY "Users can create their own posts"
-  ON community_posts FOR INSERT WITH CHECK (auth.uid() = author_id);
-
--- Authors can update or soft-delete their own posts
-CREATE POLICY "Authors can update their own posts"
-  ON community_posts FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = author_id)
+-- INSERT: Authenticated users can create posts (author_id must match auth.uid())
+CREATE POLICY "Authenticated users can create posts"
+  ON community_posts FOR INSERT
   WITH CHECK (auth.uid() = author_id);
 
+-- UPDATE: Authors can update their own posts
+CREATE POLICY "Authors can update their own posts"
+  ON community_posts FOR UPDATE
+  USING (auth.uid() = author_id);
+
+-- DELETE: Authors can delete their own posts
+CREATE POLICY "Authors can delete their own posts"
+  ON community_posts FOR DELETE
+  USING (auth.uid() = author_id);
+
 -- RLS Policies for community_post_images
+
+DROP POLICY IF EXISTS "Post images are viewable by everyone" ON community_post_images;
+DROP POLICY IF EXISTS "Users can add images to their own posts" ON community_post_images;
+DROP POLICY IF EXISTS "Users can delete images from their own posts" ON community_post_images;
+
 CREATE POLICY "Post images are viewable by everyone"
   ON community_post_images FOR SELECT USING (true);
 
@@ -124,6 +170,13 @@ CREATE POLICY "Users can delete images from their own posts"
   );
 
 -- RLS Policies for community_comments
+
+DROP POLICY IF EXISTS "Comments are viewable by everyone" ON community_comments;
+DROP POLICY IF EXISTS "Users can create their own comments" ON community_comments;
+DROP POLICY IF EXISTS "Authors can update their own comments" ON community_comments;
+DROP POLICY IF EXISTS "Admins can update any comment" ON community_comments;
+DROP POLICY IF EXISTS "Authors can delete their own comments" ON community_comments;
+
 CREATE POLICY "Comments are viewable by everyone"
   ON community_comments FOR SELECT USING (is_deleted = FALSE);
 
@@ -132,11 +185,17 @@ CREATE POLICY "Users can create their own comments"
 
 CREATE POLICY "Authors can update their own comments"
   ON community_comments FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = author_id)
-  WITH CHECK (auth.uid() = author_id);
+  USING (auth.uid() = author_id);
+
+CREATE POLICY "Authors can delete their own comments"
+  ON community_comments FOR DELETE USING (auth.uid() = author_id);
 
 -- RLS Policies for community_likes
+
+DROP POLICY IF EXISTS "Likes are viewable by everyone" ON community_likes;
+DROP POLICY IF EXISTS "Users can like posts" ON community_likes;
+DROP POLICY IF EXISTS "Users can unlike posts" ON community_likes;
+
 CREATE POLICY "Likes are viewable by everyone"
   ON community_likes FOR SELECT USING (true);
 
@@ -147,6 +206,11 @@ CREATE POLICY "Users can unlike posts"
   ON community_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- RLS Policies for community_reports
+
+DROP POLICY IF EXISTS "Users can view their own reports" ON community_reports;
+DROP POLICY IF EXISTS "Users can report posts" ON community_reports;
+DROP POLICY IF EXISTS "Users can update their own reports" ON community_reports;
+
 CREATE POLICY "Users can view their own reports"
   ON community_reports FOR SELECT USING (auth.uid() = reporter_id);
 

@@ -109,10 +109,7 @@ supabase/
 
 - `PostType` - 'general' | 'announcement' | 'tournament'
 - `CommunityPost` - Post data structure
-- `PostImage` - Image data structure
 - `CommunityComment` - Comment data structure
-- `CommunityLike` - Like data structure
-- `CommunityReport` - Report data structure
 - `CommunityFilter` - Filter options
 
 ## Next Steps
@@ -125,6 +122,19 @@ supabase/
    - Adding comments
    - Filtering posts
    - Searching posts
+
+## Important Notes
+
+### RLS Policy Fix
+The community feature uses **simplified RLS policies** that avoid UUID type mismatches:
+- All INSERT operations use `auth.uid()` directly from `supabase.auth.getUser()`
+- This ensures perfect type matching with RLS policies that check `auth.uid() = author_id`
+- No more "new row violates row-level security policy" errors
+
+### Key Implementation Details
+- The service layer (`communityData.ts`) calls `supabase.auth.getUser()` before any INSERT operation
+- It uses the actual authenticated user's ID instead of relying on passed parameters
+- This guarantees RLS compliance for all write operations
 
 ## Notes
 
