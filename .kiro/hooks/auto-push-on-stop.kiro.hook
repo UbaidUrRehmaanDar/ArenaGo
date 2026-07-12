@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Auto Push to GitHub",
+  "description": "Automatically stages all changes, creates a commit with a timestamp, and pushes to origin/master whenever the agent stops",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd /d \"D:\\Projects\\React\\ArenaGo\" && git add -A && git diff --cached --quiet || git commit -m \"Auto-save: %DATE% %TIME%\" && git push origin master",
+    "timeout": 30
+  }
+}
