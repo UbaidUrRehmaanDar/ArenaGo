@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
+import type { LucideIcon } from 'lucide-react'
 import './PillNav.css'
 
 export interface NavItem {
   label: string
   href: string
+  icon: LucideIcon
   ariaLabel?: string
 }
 
@@ -140,11 +142,15 @@ export function PillNav({
   /* ── render pill ─────────────────────────────────────────────────────── */
   const renderPill = (item: NavItem, i: number) => {
     const pillClass = `pill${activeHref === item.href ? ' is-active' : ''}`
+    const Icon = item.icon
     const inner = (
       <>
         <span className="hover-circle" aria-hidden="true" ref={(el) => { circleRefs.current[i] = el }} />
         <span className="label-stack">
-          <span className="pill-label">{item.label}</span>
+          <span className="pill-label">
+            <Icon size={16} strokeWidth={activeHref === item.href ? 2.4 : 1.8} aria-hidden className="mr-1.5" />
+            {item.label}
+          </span>
           <span className="pill-label-hover" aria-hidden="true">{item.label}</span>
         </span>
       </>

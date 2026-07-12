@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SlotGrid } from '../ui/SlotGrid'
-import { getSlotsForArenaDate } from '../../data/slots'
-import { arenas } from '../../data/arenas'
-import { format } from 'date-fns'
 import { ArenaCard } from '../ui/ArenaCard'
+import { fetchArenas, fetchSlotsForArenaDate } from '../../services/supabaseData'
+import { format } from 'date-fns'
+import type { Arena } from '../../types'
+import type { Slot } from '../../types'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -16,15 +17,22 @@ const panels = [
   { title: 'PLAY', content: 'play' },
 ]
 
-const selectSlots = getSlotsForArenaDate(
-  arenas[0].id,
-  format(new Date(), 'yyyy-MM-dd')
-).slice(8, 14)
-
 export function HowItWorks() {
   const sectionRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
+  const [arenas, setArenas] = useState<Arena[]>([])
+  const [selectSlots, setSelectSlots] = useState<Slot[]>([])
+
+  useEffect(() => {
+    fetchArenas().then((data) => {
+      setArenas(data)
+      if (data[0]) {
+        fetchSlotsForArenaDate(data[0].id, format(new Date(), 'yyyy-MM-dd'))
+          .then((slots) => setSelectSlots(slots.slice(8, 14)))
+      }
+    })
+  }, [])
 
   useEffect(() => {
     const section = sectionRef.current
@@ -35,15 +43,12 @@ export function HowItWorks() {
     const mm = gsap.matchMedia()
 
     mm.add('(max-width: 1023px)', () => {
-      ScrollTrigger.getAll().forEach((t) => {
-        if (t.vars.pin) t.kill(true)
-      })
+      ScrollTrigger.getAll().forEach((t) => { if (t.vars.pin) t.kill(true) })
       ScrollTrigger.refresh()
     })
 
     mm.add('(min-width: 1024px)', () => {
       const totalWidth = track.scrollWidth - window.innerWidth
-
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
@@ -52,23 +57,16 @@ export function HowItWorks() {
           pin: true,
           scrub: 1,
           invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            if (progress) progress.style.width = `${self.progress * 100}%`
-          },
+          onUpdate: (self) => { if (progress) progress.style.width = `${self.progress * 100}%` },
         },
       })
-
       tl.to(track, { x: -totalWidth, ease: 'none' })
-
       ScrollTrigger.refresh()
-
-      return () => {
-        tl.kill()
-      }
+      return () => { tl.kill() }
     })
 
     return () => mm.revert()
-  }, [])
+  }, [arenas])
 
   return (
     <section
@@ -85,7 +83,7 @@ export function HowItWorks() {
             >
               <div className={`w-full flex flex-col h-full justify-center ${panel.content === 'discover' ? 'max-w-3xl' : 'max-w-lg'}`}>
                 <h2 className="font-display text-display-xl text-lime mb-8">{panel.title}</h2>
-                {panel.content === 'discover' && (
+                {panel.content === 'discover' && arenas.length >= 2 && (
                   <div className="grid grid-cols-2 gap-4 mt-6">
                     {arenas.slice(0, 2).map((a) => (
                       <div key={a.id} className="flex flex-col bg-slate rounded-sm overflow-hidden border border-line">
@@ -106,9 +104,7 @@ export function HowItWorks() {
                           <p className="font-display text-[15px] text-chalk leading-tight line-clamp-1">{a.name}</p>
                           <p className="text-mist text-[11px] mt-0.5">{a.location.area}</p>
                           <div className="flex items-center justify-between mt-auto pt-2">
-                            <span className="text-chalk text-[12px] font-mono">
-                              PKR {a.pricing.weekday.toLocaleString()}/hr
-                            </span>
+                            <span className="text-chalk text-[12px] font-mono">PKR {a.pricing.weekday.toLocaleString()}/hr</span>
                             <span className="text-lime text-[11px] font-mono">{a.rating}★</span>
                           </div>
                         </div>
@@ -116,16 +112,14 @@ export function HowItWorks() {
                     ))}
                   </div>
                 )}
-                {panel.content === 'select' && <SlotGrid slots={selectSlots} readOnly />}
+                {panel.content === 'select' && selectSlots.length > 0 && (
+                  <SlotGrid slots={selectSlots} readOnly />
+                )}
                 {panel.content === 'confirm' && (
                   <div className="space-y-4">
                     {[1, 2, 3].map((step) => (
                       <div key={step} className="flex items-center gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-sm flex items-center justify-center font-mono text-sm ${
-                            step <= 3 ? 'bg-lime text-ground' : 'bg-slate text-mist'
-                          }`}
-                        >
+                        <div className="w-8 h-8 rounded-sm flex items-center justify-center font-mono text-sm bg-lime text-ground">
                           {step}
                         </div>
                         <div className={`flex-1 h-1 ${step < 3 ? 'bg-lime' : 'bg-line'}`} />
@@ -136,12 +130,8 @@ export function HowItWorks() {
                 )}
                 {panel.content === 'play' && (
                   <div className="relative">
-                    <p className="font-display text-[clamp(80px,15vw,160px)] text-chalk/10 leading-none">
-                      PLAY
-                    </p>
-                    <div
-                      className="absolute inset-0 opacity-10 play-grid-bg"
-                    />
+                    <p className="font-display text-[clamp(80px,15vw,160px)] text-chalk/10 leading-none">PLAY</p>
+                    <div className="absolute inset-0 opacity-10 play-grid-bg" />
                   </div>
                 )}
               </div>
@@ -154,10 +144,12 @@ export function HowItWorks() {
         {panels.map((panel) => (
           <article key={panel.title} className="relative">
             <h2 className="font-display text-[clamp(2rem,7vw,5rem)] text-lime mb-8">{panel.title}</h2>
-            {panel.content === 'discover' && (
+            {panel.content === 'discover' && arenas[0] && (
               <ArenaCard arena={arenas[0]} variant="listing" />
             )}
-            {panel.content === 'select' && <SlotGrid slots={selectSlots} readOnly />}
+            {panel.content === 'select' && selectSlots.length > 0 && (
+              <SlotGrid slots={selectSlots} readOnly />
+            )}
             {panel.content === 'confirm' && (
               <div className="space-y-4">
                 {[1, 2, 3].map((step) => (

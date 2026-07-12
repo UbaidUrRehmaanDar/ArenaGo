@@ -1,17 +1,15 @@
 import { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { format, isFuture, parseISO } from 'date-fns'
-import { CalendarClock, ChevronRight, Compass, Sparkles, Trophy } from 'lucide-react'
+import { CalendarClock, ChevronRight, Compass, Map, Sparkles, Trophy } from 'lucide-react'
 import { gsap } from 'gsap'
 import { Navbar } from '../components/layout/Navbar'
 import { ArenaCard } from '../components/ui/ArenaCard'
 import { BtnLink } from '../components/ui/Btn'
 import { useAuth } from '../context/AuthContext'
-import { activityFeed } from '../data/activity'
-import { demoOwner } from '../data/users'
 import { formatPKR } from '../utils/formatters'
-import { fetchArenas, fetchPlayerBookings } from '../services/supabaseData'
-import type { Arena, Booking } from '../types'
+import { fetchArenas, fetchPlayerBookings, fetchOwnerRevenue, fetchRecentActivity, fetchFavoritesForUser } from '../services/supabaseData'
+import type { Arena, Booking, ActivityItem } from '../types'
 
 export function Home() {
   const { user } = useAuth()
@@ -19,16 +17,34 @@ export function Home() {
 
   const [arenas, setArenas] = useState<Arena[]>([])
   const [playerBookings, setPlayerBookings] = useState<Booking[]>([])
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
+  const [ownerRevenue, setOwnerRevenue] = useState(0)
+  const [favouriteCount, setFavouriteCount] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
-      const fetchedArenas = await fetchArenas()
+      setLoading(true)
+      const [fetchedArenas, activity] = await Promise.all([
+        fetchArenas(),
+        fetchRecentActivity(8),
+      ])
       setArenas(fetchedArenas)
-      
+      setRecentActivity(activity)
+
       if (user?.id && user.role === 'player') {
-        const bookings = await fetchPlayerBookings(user.id)
+        const [{ bookings }, favs] = await Promise.all([
+          fetchPlayerBookings(user.id),
+          fetchFavoritesForUser(user.id),
+        ])
         setPlayerBookings(bookings)
+        setFavouriteCount(favs.length)
       }
+      if (user?.role === 'owner' && user.arenaIds?.length) {
+        const revenue = await fetchOwnerRevenue(user.arenaIds)
+        setOwnerRevenue(revenue)
+      }
+      setLoading(false)
     }
     loadData()
   }, [user])
@@ -74,24 +90,55 @@ export function Home() {
   )
 
   const role = user?.role ?? 'player'
+
+  // Derive preferred sport from booking history
+  const sportCounts: Record<string, number> = {}
+  playerBookings.forEach((b) => {
+    const s = b.sportId || 'Football'
+    sportCounts[s] = (sportCounts[s] ?? 0) + 1
+  })
+  const preferredSport =
+    Object.entries(sportCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—'
+
   const topStats = role === 'owner'
     ? [
         { label: 'Owned Arenas', value: ownerArenas.length.toString() },
         {
           label: 'Avg Occupancy',
-          value: ownerArenas.length > 0 ? `${Math.round(ownerArenas.reduce((acc, arena) => acc + arena.occupancyRate, 0) / ownerArenas.length)}%` : '0%',
+          value: ownerArenas.length > 0
+            ? `${Math.round(ownerArenas.reduce((acc, a) => acc + a.occupancyRate, 0) / ownerArenas.length)}%`
+            : '0%',
         },
-        { label: 'Revenue (Demo)', value: formatPKR(demoOwner.totalRevenue) },
+        { label: 'Total Revenue', value: formatPKR(ownerRevenue) },
       ]
     : [
         { label: 'Upcoming Bookings', value: upcomingBookings.length.toString() },
-        { label: 'Preferred Sport', value: 'Football' },
-        { label: 'Saved Arenas', value: '3' },
+        { label: 'Preferred Sport',   value: playerBookings.length > 0 ? preferredSport : '—' },
+        { label: 'Saved Arenas',      value: favouriteCount.toString() },
       ]
-
   const scheduleLink = featuredArenas[0] ? `/arenas/${featuredArenas[0].slug}/schedule` : '/arenas'
 
   if (!user) return <Navigate to="/login" replace />
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <main className="pt-20 md:pt-24 px-4 md:px-6 lg:px-8 pb-24 md:pb-10">
+          <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+            <div className="h-36 md:h-44 rounded-2xl skeleton-shimmer" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+              {[0, 1, 2].map((i) => <div key={i} className="h-20 rounded-xl skeleton-shimmer" />)}
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_0.75fr] gap-4 md:gap-5">
+              <div className="h-56 rounded-2xl skeleton-shimmer" />
+              <div className="h-56 rounded-2xl skeleton-shimmer" />
+            </div>
+          </div>
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
@@ -105,7 +152,7 @@ export function Home() {
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6">
               <div className="min-w-0">
                 <p className="text-mist font-mono text-[10px] md:text-xs uppercase tracking-[0.22em]">
-                  Signed In Home
+                  {role === 'owner' ? 'Owner Dashboard' : 'Player Home'}
                 </p>
                 <h1 className="font-display text-2xl md:text-3xl lg:text-5xl text-chalk mt-2 md:mt-3 truncate">
                   Welcome back, {user.name.split(' ')[0]}
@@ -153,30 +200,55 @@ export function Home() {
               </div>
             </div>
 
-            <aside data-home-card className="bg-turf border border-line rounded-2xl p-4 md:p-5">
-              <h2 className="font-display text-lg md:text-xl">Up Next</h2>
-              <div className="mt-4 space-y-3">
-                {upcomingBookings.length === 0 && (
-                  <div className="rounded-lg bg-slate p-3 md:p-4 text-xs md:text-sm text-mist">
-                    No upcoming bookings yet. Pick a venue and lock your slot.
-                  </div>
-                )}
-                {upcomingBookings.map((booking) => {
-                  const arena = arenas.find((a) => a.id === booking.arenaId)
-                  return (
-                    <article key={booking.id} className="rounded-lg bg-slate border border-line p-3 md:p-3.5">
-                      <p className="font-body text-chalk text-sm md:text-base truncate">{arena?.name}</p>
-                      <p className="text-[11px] md:text-xs text-mist mt-1">
-                        {format(parseISO(booking.date), 'EEE, d MMM')} at {booking.startTime}
-                      </p>
-                    </article>
-                  )
-                })}
-              </div>
-              <BtnLink to="/dashboard/player" variant="outline" className="w-full mt-4 text-xs md:text-sm py-2 md:py-2.5">
-                Open Dashboard
-              </BtnLink>
-            </aside>
+            {/* Up Next — player only */}
+            {role === 'player' && (
+              <aside data-home-card className="bg-turf border border-line rounded-2xl p-4 md:p-5">
+                <h2 className="font-display text-lg md:text-xl">Up Next</h2>
+                <div className="mt-4 space-y-3">
+                  {upcomingBookings.length === 0 && (
+                    <div className="rounded-lg bg-slate p-3 md:p-4 text-xs md:text-sm text-mist">
+                      No upcoming bookings yet. Pick a venue and lock your slot.
+                    </div>
+                  )}
+                  {upcomingBookings.map((booking) => {
+                    const arena = arenas.find((a) => a.id === booking.arenaId)
+                    return (
+                      <article key={booking.id} className="rounded-lg bg-slate border border-line p-3 md:p-3.5">
+                        <p className="font-body text-chalk text-sm md:text-base truncate">{arena?.name}</p>
+                        <p className="text-[11px] md:text-xs text-mist mt-1">
+                          {format(parseISO(booking.date), 'EEE, d MMM')} at {booking.startTime}
+                        </p>
+                      </article>
+                    )
+                  })}
+                </div>
+                <BtnLink to="/bookings" variant="outline" className="w-full mt-4 text-xs md:text-sm py-2 md:py-2.5">
+                  My Bookings
+                </BtnLink>
+              </aside>
+            )}
+            {/* Owner quick-links — owner only */}
+            {role === 'owner' && (
+              <aside data-home-card className="bg-turf border border-line rounded-2xl p-4 md:p-5">
+                <h2 className="font-display text-lg md:text-xl">Quick Links</h2>
+                <div className="mt-4 space-y-2">
+                  {[
+                    { label: 'View Bookings',  to: '/dashboard/owner/bookings'  },
+                    { label: 'Analytics',      to: '/dashboard/owner/analytics' },
+                    { label: 'Slot Manager',   to: '/dashboard/owner/slots'     },
+                    { label: 'Campaigns',      to: '/dashboard/owner/campaigns' },
+                  ].map((lnk) => (
+                    <Link
+                      key={lnk.to}
+                      to={lnk.to}
+                      className="block rounded-lg bg-slate border border-line px-4 py-3 text-sm text-chalk hover:border-lime/40 transition-colors"
+                    >
+                      {lnk.label}
+                    </Link>
+                  ))}
+                </div>
+              </aside>
+            )}
           </section>
 
           <section data-home-section className="grid grid-cols-1 xl:grid-cols-[0.8fr_1.2fr] gap-4 md:gap-5">
@@ -184,11 +256,11 @@ export function Home() {
               <h2 className="font-display text-lg md:text-xl lg:text-2xl">Quick Actions</h2>
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { icon: CalendarClock, title: 'Book A Slot', to: '/booking', desc: 'Find next available timings fast.' },
-                  { icon: Compass, title: 'Browse Arenas', to: '/arenas', desc: 'Filter by area, sport, and budget.' },
-                  { icon: Trophy, title: 'My Profile', to: '/profile', desc: 'See your account, saves, and alerts.' },
-                  { icon: Sparkles, title: 'Live Offers', to: '/promotions', desc: 'Open the current promotions feed.' },
-                  { icon: Compass, title: 'Arena Schedule', to: scheduleLink, desc: 'Check slot pressure before you book.' },
+                  { icon: CalendarClock, title: 'Book A Slot',     to: '/arenas',     desc: 'Find an arena and pick your slot.' },
+                  { icon: Compass,       title: 'Browse Arenas',   to: '/arenas',     desc: 'Filter by area, sport, and budget.' },
+                  { icon: Trophy,        title: 'My Profile',      to: '/profile',    desc: 'See your account, saves, and alerts.' },
+                  { icon: Sparkles,      title: 'Live Offers',     to: '/promotions', desc: 'Open the current promotions feed.' },
+                  { icon: Map,           title: 'Arena Schedule',  to: scheduleLink,  desc: 'Check slot pressure before you book.' },
                 ].map((item) => (
                   <Link
                     key={item.title}
@@ -219,7 +291,7 @@ export function Home() {
               <span className="text-[10px] md:text-xs text-mist font-mono">Updated moments ago</span>
             </div>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-2.5">
-              {activityFeed.slice(0, 8).map((activity) => (
+              {recentActivity.map((activity) => (
                 <article key={activity.id} className="rounded-lg bg-slate border border-line p-2.5 md:p-3">
                   <p className="text-xs md:text-sm text-chalk">
                     <span className="text-lime">{activity.playerName}</span> {activity.action} {activity.arenaName}

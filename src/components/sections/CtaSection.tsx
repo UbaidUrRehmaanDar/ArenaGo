@@ -1,10 +1,17 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { CountUp } from '../ui/CountUp'
 import { BtnLink } from '../ui/Btn'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
+import { fetchPlatformStats } from '../../services/supabaseData'
 
 export function CtaSection() {
   const { ref, inView } = useScrollReveal(0.15)
+  const [stats, setStats] = useState({ players: 0, arenas: 0, bookings: 0 })
+
+  useEffect(() => {
+    fetchPlatformStats().then(setStats)
+  }, [])
 
   return (
     <section className="min-h-screen bg-lime flex items-center justify-center py-20">
@@ -30,9 +37,9 @@ export function CtaSection() {
           className="flex flex-wrap justify-center gap-12 mt-16 pt-12 border-t border-ground/20"
         >
           {[
-            { value: 2400, suffix: '+', label: 'Active Players' },
-            { value: 38, suffix: '', label: 'Arenas Listed' },
-            { value: 12000, suffix: '+', label: 'Bookings Completed' },
+            { value: stats.players, suffix: '+', label: 'Active Players' },
+            { value: stats.arenas, suffix: '', label: 'Arenas Listed' },
+            { value: stats.bookings, suffix: '+', label: 'Bookings Completed' },
           ].map((stat) => (
             <div key={stat.label}>
               <p className="font-display text-4xl">

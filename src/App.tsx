@@ -1,29 +1,35 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { Component, lazy, Suspense, useLayoutEffect, type ReactNode } from 'react'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { BookingProvider } from './context/BookingContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { useLenis } from './hooks/useLenis'
 import { MobileBottomNav } from './components/layout/MobileBottomNav'
 import { Btn } from './components/ui/Btn'
+import { ToastContainer } from './components/ui/Toast'
+import { LoadingScreen } from './components/ui/LoadingScreen'
 
 // Lazy-load all pages so each route is a separate chunk
-const Landing        = lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })))
-const Home           = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })))
-const About          = lazy(() => import('./pages/About').then(m => ({ default: m.About })))
-const ArenaListings  = lazy(() => import('./pages/ArenaListings').then(m => ({ default: m.ArenaListings })))
-const ArenaDetail    = lazy(() => import('./pages/ArenaDetail').then(m => ({ default: m.ArenaDetail })))
-const ArenaSchedule  = lazy(() => import('./pages/ArenaSchedule').then(m => ({ default: m.ArenaSchedule })))
-const BookingFlow    = lazy(() => import('./pages/BookingFlow').then(m => ({ default: m.BookingFlow })))
+const Landing          = lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })))
+const Home             = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })))
+const About            = lazy(() => import('./pages/About').then(m => ({ default: m.About })))
+const Community        = lazy(() => import('./pages/Community').then(m => ({ default: m.Community })))
+const Notifications    = lazy(() => import('./pages/Notifications').then(m => ({ default: m.Notifications })))
+const ArenaListings    = lazy(() => import('./pages/ArenaListings').then(m => ({ default: m.ArenaListings })))
+const ArenaDetail      = lazy(() => import('./pages/ArenaDetail').then(m => ({ default: m.ArenaDetail })))
+const ArenaSchedule    = lazy(() => import('./pages/ArenaSchedule').then(m => ({ default: m.ArenaSchedule })))
+const BookingFlow      = lazy(() => import('./pages/BookingFlow').then(m => ({ default: m.BookingFlow })))
 const BookingConfirmed = lazy(() => import('./pages/BookingConfirmed').then(m => ({ default: m.BookingConfirmed })))
-const Profile        = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })))
-const Promotions     = lazy(() => import('./pages/Promotions').then(m => ({ default: m.Promotions })))
-const PlayerDashboard = lazy(() => import('./pages/PlayerDashboard').then(m => ({ default: m.PlayerDashboard })))
-const OwnerDashboard  = lazy(() => import('./pages/OwnerDashboard').then(m => ({ default: m.OwnerDashboard })))
-const Login          = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
-const Signup         = lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })))
-const CompleteProfile = lazy(() => import('./pages/CompleteProfile').then(m => ({ default: m.CompleteProfile })))
+const Profile          = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })))
+const Promotions       = lazy(() => import('./pages/Promotions').then(m => ({ default: m.Promotions })))
+const PlayerBookings   = lazy(() => import('./pages/PlayerBookings').then(m => ({ default: m.PlayerBookings })))
+const Favourites       = lazy(() => import('./pages/Favourites').then(m => ({ default: m.Favourites })))
+const Activity         = lazy(() => import('./pages/Activity').then(m => ({ default: m.Activity })))
+const OwnerDashboard   = lazy(() => import('./pages/OwnerDashboard').then(m => ({ default: m.OwnerDashboard })))
+const Login            = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
+const Signup           = lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })))
+const CompleteProfile  = lazy(() => import('./pages/CompleteProfile').then(m => ({ default: m.CompleteProfile })))
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -53,6 +59,15 @@ class ErrorBoundary extends Component<
   }
 }
 
+/** Redirects authenticated users away from public-only pages (login, landing, signup). */
+function PublicOnlyRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  if (user) {
+    return <Navigate to={user.role === 'owner' ? '/dashboard/owner' : '/home'} replace />
+  }
+  return children
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
 
@@ -60,9 +75,15 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Suspense fallback={<div className="min-h-screen bg-ground" />}>
         <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={
+            <PublicOnlyRoute>
+              <Landing />
+            </PublicOnlyRoute>
+          } />
           <Route path="/home" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/arenas" element={<ArenaListings />} />
           <Route path="/arenas/:slug" element={<ArenaDetail />} />
           <Route path="/arenas/:slug/schedule" element={<ArenaSchedule />} />
@@ -70,7 +91,9 @@ function AnimatedRoutes() {
           <Route path="/booking/confirmed" element={<BookingConfirmed />} />
           <Route path="/promotions" element={<Promotions />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/dashboard/player/*" element={<PlayerDashboard />} />
+          <Route path="/bookings" element={<PlayerBookings />} />
+          <Route path="/favourites" element={<Favourites />} />
+          <Route path="/activity" element={<Activity />} />
           <Route path="/dashboard/owner/*" element={<OwnerDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -97,9 +120,11 @@ function AppContent() {
     <ThemeProvider>
       <AuthProvider>
         <BookingProvider>
+          <LoadingScreen />
           <ScrollToTop />
           <AnimatedRoutes />
           <MobileBottomNav />
+          <ToastContainer />
         </BookingProvider>
       </AuthProvider>
     </ThemeProvider>

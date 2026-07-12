@@ -1,14 +1,27 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { CountUp } from '../ui/CountUp'
-import { BtnLink, Btn } from '../ui/Btn'
-import { arenas } from '../../data/arenas'
-import { activityFeed } from '../../data/activity'
+import { BtnLink } from '../ui/Btn'
 import { SportTag } from '../ui/SportTag'
-
-const featured = arenas.find((a) => a.isFeatured) ?? arenas[0]
-const latestActivity = activityFeed[0]
+import { fetchArenas, fetchPlatformStats, fetchRecentActivity } from '../../services/supabaseData'
+import type { Arena, ActivityItem } from '../../types'
 
 export function HeroSection() {
+  const [featured, setFeatured] = useState<Arena | null>(null)
+  const [latestActivity, setLatestActivity] = useState<ActivityItem | null>(null)
+  const [stats, setStats] = useState({ players: 0, arenas: 0, bookings: 0 })
+
+  useEffect(() => {
+    fetchArenas().then((data) => {
+      const f = data.find((a) => a.isFeatured) ?? data[0] ?? null
+      setFeatured(f)
+    })
+    fetchPlatformStats().then(setStats)
+    fetchRecentActivity(1).then((items) => {
+      if (items[0]) setLatestActivity(items[0])
+    })
+  }, [])
+
   return (
     <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
       <div className="absolute inset-0 grid-bg pointer-events-none" />
@@ -19,9 +32,7 @@ export function HeroSection() {
       <div className="relative max-w-7xl mx-auto px-4 md:px-8 w-full py-12 lg:py-0">
         <div className="grid lg:grid-cols-[60%_40%] gap-8 lg:gap-12 items-center">
           <div>
-            <p className="font-mono text-[11px] text-lime tracking-[0.2em] mb-4">
-              LAHORE
-            </p>
+            <p className="font-mono text-[11px] text-lime tracking-[0.2em] mb-4">LAHORE</p>
             <h1 className="font-display text-[clamp(2.8rem,10vw,7rem)] text-chalk leading-[0.95]">
               <motion.span
                 initial={{ opacity: 0, y: 50 }}
@@ -47,7 +58,7 @@ export function HeroSection() {
               transition={{ delay: 0.38, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="text-base md:text-body-lg text-mist max-w-md mt-6 font-body"
             >
-              Find and reserve sports arenas in your city. No calls, no waiting, no hassle.
+              Find and reserve sports arenas in Lahore. Real-time availability, instant booking.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -56,11 +67,11 @@ export function HeroSection() {
               className="flex flex-wrap gap-3 mt-8"
             >
               <BtnLink to="/arenas" className="px-6 py-3">
-                Browse Arenas
+                Find a Court
               </BtnLink>
-              <Btn variant="outline" className="px-6 py-3">
-                Watch Demo
-              </Btn>
+              <BtnLink to="/#how-it-works" variant="outline" className="px-6 py-3">
+                How It Works
+              </BtnLink>
             </motion.div>
             <motion.div
               initial={{ opacity: 0 }}
@@ -69,9 +80,9 @@ export function HeroSection() {
               className="flex flex-wrap gap-6 md:gap-8 mt-10 md:mt-12 pt-8 border-t border-line"
             >
               {[
-                { value: 2400, suffix: '+', label: 'Active Players' },
-                { value: 38, suffix: '', label: 'Arenas Listed' },
-                { value: 12000, suffix: '+', label: 'Bookings Completed' },
+                { value: stats.players, suffix: '+', label: 'Active Players' },
+                { value: stats.arenas, suffix: '', label: 'Arenas Listed' },
+                { value: stats.bookings, suffix: '+', label: 'Bookings Completed' },
               ].map((stat) => (
                 <div key={stat.label}>
                   <p className="font-display text-3xl md:text-5xl text-lime">
@@ -83,44 +94,48 @@ export function HeroSection() {
             </motion.div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.45, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="relative h-[400px] hidden lg:block"
-          >
+          {featured && (
             <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-0 left-0 w-[280px] bg-slate border border-lime/15 rounded-sm p-5 shadow-xl z-10"
+              initial={{ opacity: 0, x: 60 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="relative h-[400px] hidden lg:block"
             >
-              <SportTag sport={featured.sport} />
-              <h3 className="font-display text-2xl text-chalk mt-3">{featured.name}</h3>
-              <p className="text-mist text-sm mt-1">{featured.rating} rating</p>
-              <p className="font-mono text-lime text-sm mt-3">Next: Today 7:00 PM</p>
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-0 left-0 w-[280px] bg-slate border border-lime/15 rounded-sm p-5 shadow-xl z-10"
+              >
+                <SportTag sport={featured.sport} />
+                <h3 className="font-display text-2xl text-chalk mt-3">{featured.name}</h3>
+                <p className="text-mist text-sm mt-1">{featured.rating} rating</p>
+                <p className="font-mono text-lime text-sm mt-3">Next: Today 7:00 PM</p>
+              </motion.div>
+              {latestActivity && (
+                <motion.div
+                  animate={{ y: [0, 6, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                  className="absolute top-24 right-0 w-[240px] bg-slate border border-lime/15 rounded-sm p-4 -rotate-3 shadow-xl z-20"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-lime rounded-full animate-pulse-dot" />
+                    <p className="text-[13px] text-chalk font-body">
+                      {latestActivity.playerName} just booked {latestActivity.arenaName}
+                    </p>
+                  </div>
+                  <p className="font-mono text-xs text-mist mt-1">{latestActivity.time}</p>
+                </motion.div>
+              )}
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                className="absolute bottom-0 right-8 w-[200px] bg-slate border border-lime/15 rounded-sm p-4 rotate-2 shadow-xl"
+              >
+                <p className="font-display text-3xl text-lime">{featured.occupancyRate}%</p>
+                <p className="text-mist text-[13px]">Occupied Tonight</p>
+              </motion.div>
             </motion.div>
-            <motion.div
-              animate={{ y: [0, 6, 0] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-              className="absolute top-24 right-0 w-[240px] bg-slate border border-lime/15 rounded-sm p-4 -rotate-3 shadow-xl z-20"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-lime rounded-full animate-pulse-dot" />
-                <p className="text-[13px] text-chalk font-body">
-                  {latestActivity.playerName} just booked {latestActivity.arenaName}
-                </p>
-              </div>
-              <p className="font-mono text-xs text-mist mt-1">{latestActivity.time}</p>
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-              className="absolute bottom-0 right-8 w-[200px] bg-slate border border-lime/15 rounded-sm p-4 rotate-2 shadow-xl"
-            >
-              <p className="font-display text-3xl text-lime">{featured.occupancyRate}%</p>
-              <p className="text-mist text-[13px]">Occupied Tonight</p>
-            </motion.div>
-          </motion.div>
+          )}
         </div>
       </div>
     </section>

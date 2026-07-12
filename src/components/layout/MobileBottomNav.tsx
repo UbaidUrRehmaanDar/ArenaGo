@@ -1,26 +1,41 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Search, CalendarCheck, User } from 'lucide-react'
+import { Home, Search, Users, CalendarCheck, Heart, Bell } from 'lucide-react'
 import { cn } from '../../utils/formatters'
+import { useAuth } from '../../context/AuthContext'
 
-const NAV_ITEMS = [
-  { href: '/home',             label: 'Home',    icon: Home          },
-  { href: '/arenas',           label: 'Arenas',  icon: Search        },
-  { href: '/booking',          label: 'Book',    icon: CalendarCheck },
-  { href: '/dashboard/player', label: 'Profile', icon: User          },
+const PLAYER_NAV = [
+  { href: '/home',          label: 'Home',       icon: Home          },
+  { href: '/arenas',        label: 'Explore',    icon: Search        },
+  { href: '/community',     label: 'Community',  icon: Users         },
+  { href: '/bookings',      label: 'Bookings',   icon: CalendarCheck },
+  { href: '/favourites',    label: 'Saved',      icon: Heart         },
+  { href: '/notifications', label: 'Alerts',     icon: Bell          },
+]
+
+const PUBLIC_NAV = [
+  { href: '/arenas',     label: 'Explore', icon: Search        },
+  { href: '/promotions', label: 'Offers',  icon: CalendarCheck },
 ]
 
 export function MobileBottomNav() {
   const { pathname } = useLocation()
+  const { user } = useAuth()
 
-  const shouldShowNav =
-    pathname === '/home' ||
-    pathname.startsWith('/arenas') ||
-    pathname.startsWith('/booking') ||
-    pathname.startsWith('/dashboard/player')
-  if (!shouldShowNav) return null
+  // Hide on auth/onboarding and owner dashboard
+  const isAuthFlow = ['/login', '/signup', '/complete-profile'].includes(pathname)
+  const isOwnerDash = pathname.startsWith('/dashboard/owner')
+  if (isAuthFlow || isOwnerDash) return null
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`)
+  const items = user?.role === 'player' ? PLAYER_NAV : PUBLIC_NAV
+
+  // Only show on relevant routes
+  const playerRoutes = ['/home', '/arenas', '/community', '/bookings', '/favourites', '/profile', '/promotions', '/activity', '/notifications']
+  const publicRoutes = ['/arenas', '/promotions', '/about']
+  const validRoutes = user ? playerRoutes : publicRoutes
+  const shouldShow = validRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
+  if (!shouldShow) return null
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   return (
     <nav
@@ -28,9 +43,8 @@ export function MobileBottomNav() {
       aria-label="Mobile navigation"
     >
       <div className="absolute inset-0 bg-ground/90 backdrop-blur-xl border-t border-line" />
-
       <ul className="relative flex items-center justify-around h-16">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon: Icon }) => {
           const active = isActive(href)
           return (
             <li key={href} className="flex-1 flex justify-center">
@@ -44,9 +58,7 @@ export function MobileBottomNav() {
                 )}
               >
                 <Icon size={20} strokeWidth={active ? 2.4 : 1.8} />
-                <span className="text-[10px] font-body font-medium leading-none">
-                  {label}
-                </span>
+                <span className="text-[10px] font-body font-medium leading-none">{label}</span>
               </Link>
             </li>
           )

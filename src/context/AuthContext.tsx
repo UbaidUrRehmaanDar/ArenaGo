@@ -5,9 +5,10 @@ import type { AuthUser } from '../types'
 
 interface AuthContextValue {
   user: AuthUser | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; user?: AuthUser | null }>
   signup: (email: string, password: string, role: 'player' | 'owner', name: string) => Promise<{success: boolean, error?: string}>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
   loading: boolean
 }
 
@@ -44,20 +45,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; user?: AuthUser | null }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (error || !data.user) return false
-      
+      if (error || !data.user) return { success: false }
+
       const profile = await fetchUserProfile(data.user.id)
       setUser(profile)
-      return true
+      return { success: true, user: profile }
     } catch (err) {
       console.error(err)
-      return false
+      return { success: false }
     }
   }
 
@@ -66,11 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: name,
+            role: role === 'player' ? 'customer' : 'owner',
+          }
+        }
       })
       if (error) return { success: false, error: error.message }
       if (!data.user) return { success: false, error: 'Unknown error during sign up.' }
 
-      // Insert profile into public.profiles table
+      // Try to insert profile into public.profiles table
+      // If it already exists (duplicate key), that's okay - just fetch it
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         email: data.user.email,
@@ -81,23 +89,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (profileError) {
-        console.error('Failed to create profile:', profileError)
+        console.error('Profile insert error:', profileError)
+        // If it's a duplicate key error, the profile already exists - that's fine
+        if (profileError.code !== '23505') {
+          return { success: false, error: 'Failed to create profile. Please try again.' }
+        }
+        console.log('Profile already exists, continuing...')
       }
 
-      // Auto-login after signup
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (loginError) {
-        console.error('Auto-login failed:', loginError)
-        // Still return success since signup worked
-        return { success: true }
-      }
-
-      if (loginData.user) {
-        const profile = await fetchUserProfile(loginData.user.id)
+      // Supabase automatically creates a session during signup
+      // Fetch the profile to set user state
+      if (data.user) {
+        const profile = await fetchUserProfile(data.user.id)
         setUser(profile)
       }
 
@@ -113,8 +116,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const refreshUser = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (authUser) {
+      const profile = await fetchUserProfile(authUser.id)
+      setUser(profile)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, refreshUser, loading }}>
       {!loading ? children : <div className="min-h-screen flex items-center justify-center bg-ground text-chalk">Loading...</div>}
     </AuthContext.Provider>
   )

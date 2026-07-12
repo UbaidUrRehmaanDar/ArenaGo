@@ -7,6 +7,7 @@ import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { BtnLink } from '../components/ui/Btn'
 import { StatCard } from '../components/ui/StatCard'
+import { LoadingState } from '../components/ui/LoadingSpinner'
 import { fetchActivePromotions, fetchArenas } from '../services/supabaseData'
 import { useAuth } from '../context/AuthContext'
 import type { Arena, PromotionRecord } from '../types'
@@ -23,7 +24,7 @@ function formatOfferValue(promotion: PromotionRecord) {
   return `${formatPKR(promotion.value)} value`
 }
 
-export function OwnerCampaigns() {
+export function OwnerCampaigns({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth()
   const [promotions, setPromotions] = useState<PromotionFeedItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,11 +35,15 @@ export function OwnerCampaigns() {
       setLoading(true)
       const [promotionData, arenaData] = await Promise.all([fetchActivePromotions(), fetchArenas()])
       const arenaMap = new Map(arenaData.map((arena) => [arena.id, arena]))
+      // Filter to only promotions for this owner's arenas
+      const ownerArenaIds = new Set(user.arenaIds ?? [])
       setPromotions(
-        promotionData.map((promotion) => ({
-          ...promotion,
-          arena: arenaMap.get(promotion.arenaId),
-        }))
+        promotionData
+          .filter((p) => ownerArenaIds.size === 0 || ownerArenaIds.has(p.arenaId))
+          .map((promotion) => ({
+            ...promotion,
+            arena: arenaMap.get(promotion.arenaId),
+          }))
       )
       setLoading(false)
     }
@@ -58,19 +63,10 @@ export function OwnerCampaigns() {
   }, [promotions])
 
   if (!user) return <Navigate to="/login" replace />
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-ground flex items-center justify-center text-mist">
-        Loading campaigns...
-      </div>
-    )
-  }
+  if (loading) return <LoadingState message="Loading campaigns..." />
 
-  return (
-    <>
-      <Navbar />
-      <PageWrapper className="pt-20 md:pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
+  const content = (
+    <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
           <section className="rounded-[28px] border border-line bg-gradient-to-br from-turf via-slate/70 to-ground p-5 md:p-8 noise-overlay overflow-hidden">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6 items-end">
               <div className="space-y-4">
@@ -192,10 +188,20 @@ export function OwnerCampaigns() {
                     </div>
                   </article>
                 )
-              })}
-            </div>
-          </section>
-        </div>
+              })
+            }
+          </div>
+        </section>
+      </div>
+  )
+
+  if (embedded) return content
+
+  return (
+    <>
+      <Navbar />
+      <PageWrapper className="pt-20 md:pt-24 pb-16">
+        {content}
       </PageWrapper>
       <Footer />
     </>

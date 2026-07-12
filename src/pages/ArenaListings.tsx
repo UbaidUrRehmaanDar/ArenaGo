@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
@@ -6,7 +6,8 @@ import { PageWrapper } from '../components/layout/PageWrapper'
 import { ArenaCard } from '../components/ui/ArenaCard'
 import { Btn } from '../components/ui/Btn'
 import { SortDropdown, type SortValue } from '../components/ui/SortDropdown'
-import { fetchArenas } from '../services/supabaseData'
+import { CustomDropdown } from '../components/ui/CustomDropdown'
+import { fetchArenas, fetchCities } from '../services/supabaseData'
 import type { Arena, SportType } from '../types'
 import { cn } from '../utils/formatters'
 
@@ -20,9 +21,8 @@ const sportFilters: (SportType | 'All Sports')[] = [
   'Padel',
 ]
 
-const cityFilters = ['All Cities', 'Lahore']
-
-const extraFilters = ['Available Now', 'Peak Hours', 'Under PKR 1500']
+const extraFilters = ['Available Now', 'Peak Hours']
+const budgetFilters = ['Under PKR 500', 'Under PKR 1000', 'Under PKR 1500', 'Under PKR 2000']
 
 export function ArenaListings() {
   const [searchParams] = useSearchParams()
@@ -33,19 +33,42 @@ export function ArenaListings() {
     (searchParams.get('sport') as SportType) || 'All Sports'
   )
   const [city, setCity] = useState('All Cities')
+  const [cityOptions, setCityOptions] = useState<string[]>([])
   const [extra, setExtra] = useState<string | null>(null)
+  const [budget, setBudget] = useState<string | null>(null)
   const [hoveredArena, setHoveredArena] = useState<string | null>(null)
-
   const [allArenas, setAllArenas] = useState<Arena[]>([])
-  
+  const searchCircleRef = useRef<HTMLSpanElement>(null)
+
   useEffect(() => {
-    async function loadArenas() {
-      const data = await fetchArenas()
-      setAllArenas(data)
+    async function loadAll() {
+      const [arenaData, citiesData] = await Promise.all([fetchArenas(), fetchCities()])
+      setAllArenas(arenaData)
+      setCityOptions(citiesData.map((c) => c.name))
       setLoading(false)
     }
-    loadArenas()
+    loadAll()
   }, [])
+
+  const handleSearchEnter = () => {
+    const circle = searchCircleRef.current
+    if (!circle) return
+    circle.style.transition = 'width 4s cubic-bezier(0.25, 1, 0.5, 1), height 4s cubic-bezier(0.25, 1, 0.5, 1)'
+    circle.style.width = '200%'
+    circle.style.height = '200%'
+  }
+
+  const handleSearchLeave = () => {
+    const circle = searchCircleRef.current
+    if (!circle) return
+    circle.style.transition = 'none'
+    // Force reflow to ensure transition change takes effect
+    void circle.offsetHeight
+    circle.style.width = '0'
+    circle.style.height = '0'
+  }
+
+  const cityFilters = useMemo(() => ['All Cities', ...cityOptions], [cityOptions])
 
   const trending = useMemo(
     () => [...allArenas].sort((a, b) => b.totalBookings - a.totalBookings).slice(0, 3),
@@ -56,9 +79,12 @@ export function ArenaListings() {
     return allArenas.filter((a) => {
       if (sport !== 'All Sports' && a.sport !== sport) return false
       if (city !== 'All Cities' && a.location.city !== city) return false
-      if (extra === 'Under PKR 1500' && a.pricing.weekday > 1500) return false
       if (extra === 'Peak Hours' && a.occupancyRate < 70) return false
       if (extra === 'Available Now' && a.occupancyRate > 90) return false
+      if (budget === 'Under PKR 500' && a.pricing.weekday > 500) return false
+      if (budget === 'Under PKR 1000' && a.pricing.weekday > 1000) return false
+      if (budget === 'Under PKR 1500' && a.pricing.weekday > 1500) return false
+      if (budget === 'Under PKR 2000' && a.pricing.weekday > 2000) return false
       if (search) {
         const q = search.toLowerCase()
         return (
@@ -69,7 +95,7 @@ export function ArenaListings() {
       }
       return true
     })
-  }, [allArenas, sport, city, extra, search])
+  }, [allArenas, sport, city, extra, budget, search])
 
   const filtered = useMemo(() => {
     const list = [...filteredBase]
@@ -100,40 +126,43 @@ export function ArenaListings() {
               <span className="text-lime">IN LAHORE</span>
             </h1>
             <form onSubmit={(e) => e.preventDefault()} className="flex mt-4 md:mt-6 max-w-2xl">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, sport, or area..."
-                className="flex-1 bg-slate text-chalk px-3 md:px-4 py-2.5 md:py-3 rounded-l-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body text-[13px] md:text-[15px]"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, sport, or area..."
+                  className="search-input w-full bg-slate text-chalk px-3 md:px-4 py-2.5 md:py-3 rounded-l-sm border border-line focus:outline focus:outline-2 focus:outline-lime font-body text-[13px] md:text-[15px] relative z-10"
+                  onMouseEnter={handleSearchEnter}
+                  onMouseLeave={handleSearchLeave}
+                />
+                <span className="search-hover-circle" ref={searchCircleRef} aria-hidden="true" />
+              </div>
               <Btn type="submit" shape="attached-right" className="px-4 md:px-6 py-2.5 md:py-3 text-xs md:text-sm">
                 Search
               </Btn>
             </form>
-            <div className="flex gap-2 mt-3 md:mt-4 overflow-x-auto pb-2 scrollbar-hide">
-              {sportFilters.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSport(s)}
-                  className={cn('btn-chip flex-shrink-0 text-xs md:text-sm', sport === s ? 'btn-chip-active' : 'btn-chip-inactive')}
-                >
-                  {s}
-                </button>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 md:mt-6">
+              <CustomDropdown
+                options={sportFilters}
+                value={sport}
+                onChange={(val) => setSport(val as SportType | 'All Sports')}
+                placeholder="Select Sport"
+              />
+              <CustomDropdown
+                options={cityFilters}
+                value={city}
+                onChange={setCity}
+                placeholder="Select City"
+              />
+              <CustomDropdown
+                options={budgetFilters}
+                value={budget || ''}
+                onChange={(val) => setBudget(val === '' ? null : val)}
+                placeholder="Budget"
+              />
             </div>
-            <div className="flex gap-2 mt-2 overflow-x-auto pb-2">
-              {cityFilters.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCity(c)}
-                  className={cn('btn-chip flex-shrink-0 text-xs md:text-sm', city === c ? 'btn-chip-active' : 'btn-chip-inactive')}
-                >
-                  {c}
-                </button>
-              ))}
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
               {extraFilters.map((e) => (
                 <button
                   key={e}

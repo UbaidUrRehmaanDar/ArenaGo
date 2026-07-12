@@ -47,11 +47,14 @@ export function BookingFlow() {
                   Booking Desk
                 </span>
                 <h1 className="font-display text-[clamp(2.4rem,8vw,5.4rem)] text-chalk leading-[0.92]">
-                  Keep the booking journey visible instead of hiding it in a redirect.
+                  {selectedSlots.length > 0
+                    ? 'Your slot is selected. Ready to confirm?'
+                    : 'Pick an arena to start your booking.'}
                 </h1>
                 <p className="max-w-2xl text-sm md:text-base text-mist">
-                  Use this page to continue any selected slot, review the current booking context, and jump back into arena selection when you’re starting fresh.
-                </p>
+                  {selectedSlots.length > 0
+                    ? 'Review your selected slot below, then confirm to lock it in. You can also go back to the arena to adjust your selection.'
+                    : 'Browse the arena listings, select a time slot, and return here to confirm. Your selection is saved as you go.'}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-line bg-ground/80 p-4">
@@ -76,7 +79,7 @@ export function BookingFlow() {
               <BtnLink to="/arenas" className="px-5 py-3 text-sm">
                 Pick an Arena
               </BtnLink>
-              <BtnLink to="/dashboard/player/bookings" variant="outline" className="px-5 py-3 text-sm">
+              <BtnLink to="/bookings" variant="outline" className="px-5 py-3 text-sm">
                 View My Bookings
               </BtnLink>
             </div>

@@ -4,7 +4,6 @@ import { useBooking } from '../../context/BookingContext'
 import { createSupabaseBooking } from '../../services/supabaseData'
 import { formatPKR, formatDate, formatTime } from '../../utils/formatters'
 import { useAuth } from '../../context/AuthContext'
-import { demoPlayer } from '../../data/users'
 import { Btn } from './Btn'
 import { useEffect, useState } from 'react'
 
@@ -96,8 +95,8 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
 
   if (!open) return null
 
-  const playerName = user?.name ?? demoPlayer.name
-  const playerEmail = user?.email ?? demoPlayer.email
+  const playerName = user?.name ?? 'Player'
+  const playerEmail = user?.email ?? ''
   const activeSlots = slots.length > 0 ? slots : slot ? [slot] : []
   const bookingTotal = activeSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)
   const bookingCount = activeSlots.length
@@ -182,7 +181,7 @@ export function BookingSteps({ open, onClose }: BookingStepsProps) {
             </div>
             <div className="space-y-3">
               <Btn
-                onClick={() => { resetBooking(); onClose(); navigate('/dashboard/player') }}
+                onClick={() => { resetBooking(); onClose(); navigate('/bookings') }}
                 className="w-full py-3"
               >
                 View Booking

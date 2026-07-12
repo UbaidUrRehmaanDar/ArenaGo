@@ -12,18 +12,17 @@ import {
 import { Camera } from 'lucide-react'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { StatCard } from '../components/ui/StatCard'
-import { HomeTab } from '../components/sections/HomeTab'
 import { OwnerBookings as OwnerBookingsPage } from './OwnerBookings'
 import { OwnerCampaigns } from './OwnerCampaigns'
+import { LoadingState } from '../components/ui/LoadingSpinner'
+import { Btn } from '../components/ui/Btn'
 import { useAuth } from '../context/AuthContext'
-import { getAnalyticsForOwner, heatmapData, HEATMAP_DAYS, HEATMAP_HOURS } from '../data/analytics'
-import { fetchArenaById, uploadArenaImage } from '../services/supabaseData'
+import { fetchArenaById, uploadArenaImage, fetchBlockedSlots, setBlockedSlot, fetchOwnerAnalytics } from '../services/supabaseData'
 import { useChartTheme } from '../hooks/useChartTheme'
 import { cn, formatPKR } from '../utils/formatters'
 import type { Arena } from '../types'
 
 const links = [
-  { to: '/dashboard/owner/home', label: 'Home' },
   { to: '/dashboard/owner', label: 'Overview' },
   { to: '/dashboard/owner/bookings', label: 'Bookings' },
   { to: '/dashboard/owner/arenas', label: 'Arenas' },
@@ -59,13 +58,35 @@ function useOwnerData() {
 
 function OwnerOverview() {
   const { user } = useAuth()
-  const analytics = getAnalyticsForOwner(user?.arenaIds || [])
-  const combined = analytics[0] || { revenue: { thisMonth: 0, lastMonth: 1, thisWeek: 0 }, bookings: { thisMonth: 0, completionRate: 0 } }
-  const revChange = Math.round(
-    ((combined.revenue.thisMonth - combined.revenue.lastMonth) /
-      combined.revenue.lastMonth) *
-      100
-  )
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadAnalytics() {
+      if (!user?.arenaIds || user.arenaIds.length === 0) {
+        setAnalytics({
+          totalBookings: 0,
+          totalRevenue: 0,
+          averageOccupancy: 0,
+          popularSports: [],
+          monthlyRevenue: [],
+        })
+        setLoading(false)
+        return
+      }
+
+      const data = await fetchOwnerAnalytics(user.arenaIds)
+      setAnalytics(data)
+      setLoading(false)
+    }
+    loadAnalytics()
+  }, [user])
+
+  if (loading) return <LoadingState message="Loading analytics..." />
+
+  const thisMonthRevenue = analytics?.monthlyRevenue?.[analytics.monthlyRevenue.length - 1]?.revenue || 0
+  const lastMonthRevenue = analytics?.monthlyRevenue?.[analytics.monthlyRevenue.length - 2]?.revenue || 0
+  const revChange = lastMonthRevenue > 0 ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100) : 0
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -73,9 +94,7 @@ function OwnerOverview() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mb-6 lg:mb-8">
         <StatCard
           label="This Month"
-          value={formatPKR(
-            analytics.reduce((s, a) => s + a.revenue.thisMonth, 0)
-          )}
+          value={formatPKR(thisMonthRevenue)}
         />
         <StatCard
           label="vs Last Month"
@@ -85,24 +104,24 @@ function OwnerOverview() {
           trendDirection={revChange >= 0 ? 'up' : 'down'}
         />
         <StatCard
-          label="This Week"
-          value={formatPKR(analytics.reduce((s, a) => s + a.revenue.thisWeek, 0))}
+          label="Total Revenue"
+          value={formatPKR(analytics?.totalRevenue || 0)}
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
         <StatCard
-          label="Total Bookings This Month"
-          value={analytics.reduce((s, a) => s + a.bookings.thisMonth, 0)}
+          label="Total Bookings"
+          value={analytics?.totalBookings || 0}
         />
-        <StatCard label="Completion Rate" value={`${combined.bookings.completionRate}%`} />
-        <StatCard label="Peak Booking Day" value="Friday" />
+        <StatCard label="Occupancy Rate" value={`${Math.round((analytics?.averageOccupancy || 0) * 100)}%`} />
+        <StatCard label="Popular Sport" value={analytics?.popularSports?.[0]?.sport || 'N/A'} />
       </div>
     </div>
   )
 }
 
 function OwnerBookings() {
-  return <OwnerBookingsPage />
+  return <OwnerBookingsPage embedded={true} />
 }
 
 function OwnerArenas() {
@@ -120,75 +139,94 @@ function OwnerArenas() {
     setUploading((prev) => ({ ...prev, [arenaId]: false }))
   }
 
-  if (loading) return <div className="text-mist">Loading...</div>
+  if (loading) return <LoadingState message="Loading..." />
 
   return (
     <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">MY ARENAS</h1>
-      <div className="grid gap-4">
-        {arenas.map(
-          (arena) =>
-            arena && (
-              <div key={arena.id} className="bg-slate p-4 lg:p-6 rounded-sm flex flex-col sm:flex-row gap-4 lg:gap-6">
-                {/* Arena image with upload overlay */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRefs.current[arena.id]?.click()}
-                  className="relative group w-full sm:w-32 h-24 sm:h-24 shrink-0 rounded-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-lime"
-                  aria-label="Upload arena photo"
-                >
-                  <img
-                    src={arenaImages[arena.id] ?? arena.images[0]}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                  <span className={cn(
-                    'absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ground/70 transition-opacity',
-                    uploading[arena.id] ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  )}>
-                    {uploading[arena.id]
-                      ? <span className="text-[10px] font-mono text-lime">Uploading…</span>
-                      : <>
-                          <Camera size={16} className="text-chalk" />
-                          <span className="text-[10px] font-mono text-chalk">Change photo</span>
-                        </>
-                    }
-                  </span>
-                </button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  ref={(el) => { fileInputRefs.current[arena.id] = el }}
-                  onChange={(e) => handleImageChange(arena.id, e)}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-display text-xl lg:text-2xl truncate">{arena.name}</p>
-                  <p className="text-mist text-sm mt-1">
-                    {arena.location.area} · {arena.occupancyRate}% occupancy
-                  </p>
-                  <div className="mt-3 h-1 bg-ground rounded-sm overflow-hidden max-w-full sm:max-w-xs">
-                    <div
-                      className="h-full bg-lime"
-                      style={{ width: `${arena.occupancyRate}%` }}
+      {arenas.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-mist text-sm mb-4">You don't have any arenas yet.</p>
+          <p className="text-mist/60 text-xs mb-6">Contact support to add your arena to the platform.</p>
+          <Btn className="inline-block">
+            Contact Support
+          </Btn>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {arenas.map(
+            (arena) =>
+              arena && (
+                <div key={arena.id} className="bg-slate p-4 lg:p-6 rounded-sm flex flex-col sm:flex-row gap-4 lg:gap-6">
+                  {/* Arena image with upload overlay */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRefs.current[arena.id]?.click()}
+                    className="relative group w-full sm:w-32 h-24 sm:h-24 shrink-0 rounded-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-lime"
+                    aria-label="Upload arena photo"
+                  >
+                    <img
+                      src={arenaImages[arena.id] ?? arena.images[0]}
+                      alt=""
+                      className="w-full h-full object-cover"
                     />
+                    <span className={cn(
+                      'absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ground/70 transition-opacity',
+                      uploading[arena.id] ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    )}>
+                      {uploading[arena.id]
+                        ? <span className="text-[10px] font-mono text-lime">Uploading…</span>
+                        : <>
+                            <Camera size={16} className="text-chalk" />
+                            <span className="text-[10px] font-mono text-chalk">Change photo</span>
+                          </>
+                      }
+                    </span>
+                  </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={(el) => { fileInputRefs.current[arena.id] = el }}
+                    onChange={(e) => handleImageChange(arena.id, e)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-xl lg:text-2xl truncate">{arena.name}</p>
+                    <p className="text-mist text-sm mt-1">
+                      {arena.location.area} · {arena.occupancyRate}% occupancy
+                    </p>
+                    <div className="mt-3 h-1 bg-ground rounded-sm overflow-hidden max-w-full sm:max-w-xs">
+                      <div
+                        className="h-full bg-lime"
+                        style={{ width: `${arena.occupancyRate}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-        )}
-      </div>
+              )
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 function OwnerAnalytics() {
   const { user } = useAuth()
-  const analytics = getAnalyticsForOwner(user?.arenaIds || [])[0]
   const { arenas } = useOwnerData()
   const chart = useChartTheme()
+  const [analyticsData, setAnalyticsData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!analytics) return null
+  useEffect(() => {
+    if (!user?.arenaIds?.length) { setLoading(false); return }
+    fetchOwnerAnalytics(user.arenaIds).then((data) => {
+      setAnalyticsData(data)
+      setLoading(false)
+    })
+  }, [user])
+
+  if (loading) return <LoadingState message="Loading analytics..." />
 
   const tooltipStyle = {
     background: chart.tooltipBg,
@@ -196,86 +234,52 @@ function OwnerAnalytics() {
     color: chart.tooltipText,
   }
 
+  const revenueData = analyticsData?.monthlyRevenue ?? []
+  const sportData = analyticsData?.popularSports ?? []
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 lg:space-y-12">
       <h1 className="font-display text-display-md text-chalk">ANALYTICS</h1>
 
-      <div>
-        <h2 className="font-display text-sm text-chalk mb-4 tracking-wide">REVENUE TREND</h2>
-        <div className="h-[250px] lg:h-[280px] bg-slate/50 p-4 rounded-sm">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={analytics.revenue.trend}>
-              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatPKR(Number(v)), 'Revenue']} />
-              <Line
-                type="monotone"
-                dataKey="amount"
-                stroke={chart.lime}
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="font-display text-sm text-chalk mb-4 tracking-wide">BOOKING HEATMAP</h2>
-        <div className="overflow-x-auto">
-          <div className="min-w-[500px] lg:min-w-[600px]">
-            <div className="flex gap-1 mb-1 pl-10 lg:pl-12">
-              {HEATMAP_HOURS.map((h) => (
-                <span key={h} className="flex-1 font-mono text-[9px] text-mist text-center">
-                  {h}
-                </span>
-              ))}
-            </div>
-            {heatmapData.map((row, dayIdx) => (
-              <div key={HEATMAP_DAYS[dayIdx]} className="flex items-center gap-1 mb-1">
-                <span className="w-8 lg:w-10 font-mono text-[10px] text-mist shrink-0">{HEATMAP_DAYS[dayIdx]}</span>
-                <div className="flex flex-1 gap-0.5 min-w-0">
-                  {row.map((intensity, hourIdx) => (
-                    <div
-                      key={hourIdx}
-                      className="flex-1 h-5 lg:h-6 rounded-sm min-w-[10px] lg:min-w-[12px]"
-                      style={{
-                        backgroundColor: `color-mix(in srgb, ${chart.lime} ${Math.round(intensity * 100)}%, transparent)`,
-                      }}
-                      title={`${intensity * 100}%`}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+      {revenueData.length > 0 && (
+        <div>
+          <h2 className="font-display text-sm text-chalk mb-4 tracking-wide">REVENUE TREND</h2>
+          <div className="h-[250px] lg:h-[280px] bg-slate/50 p-4 rounded-sm">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueData}>
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatPKR(Number(v)), 'Revenue']} />
+                <Line type="monotone" dataKey="revenue" stroke={chart.lime} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      </div>
+      )}
 
-      <div>
-        <h2 className="font-display text-sm text-chalk mb-4">SPORT BREAKDOWN</h2>
-        <div className="h-[250px] lg:h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={analytics.sportBreakdown}
-                dataKey="percentage"
-                nameKey="sport"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={(props) => {
-                  const entry = props as unknown as { sport: string; percentage: number }
-                  return `${entry.sport} ${entry.percentage}%`
-                }}
-              >
-                {analytics.sportBreakdown.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
+      {sportData.length > 0 && (
+        <div>
+          <h2 className="font-display text-sm text-chalk mb-4">SPORT BREAKDOWN</h2>
+          <div className="h-[250px] lg:h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={sportData}
+                  dataKey="count"
+                  nameKey="sport"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={(p: any) => `${p.sport} (${p.count})`}
+                >
+                  {sportData.map((_: any, i: number) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <h2 className="font-display text-sm text-chalk mb-4">OCCUPANCY BY ARENA</h2>
@@ -285,10 +289,7 @@ function OwnerAnalytics() {
             <div key={arena.id} className="flex items-center gap-3 lg:gap-4 mb-4">
               <span className="font-mono text-xs text-mist w-32 lg:w-40 truncate shrink-0">{arena.name}</span>
               <div className="flex-1 h-2 lg:h-3 bg-slate rounded-sm overflow-hidden min-w-0">
-                <div
-                  className="h-full bg-lime transition-all"
-                  style={{ width: `${arena.occupancyRate}%` }}
-                />
+                <div className="h-full bg-lime transition-all" style={{ width: `${arena.occupancyRate}%` }} />
               </div>
               <span className="font-mono text-xs text-lime w-8 lg:w-10 shrink-0">{arena.occupancyRate}%</span>
             </div>
@@ -303,22 +304,47 @@ function SlotManager() {
   const { arenas, loading } = useOwnerData()
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const [blocked, setBlocked] = useState<Set<string>>(new Set())
+  const [loadingBlocked, setLoadingBlocked] = useState(true)
 
-  const toggle = (key: string) => {
-    setBlocked((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+  useEffect(() => {
+    async function loadBlockedSlots() {
+      const allBlocked: string[] = []
+      for (const arena of arenas) {
+        if (arena) {
+          const blockedForArena = await fetchBlockedSlots(arena.id)
+          allBlocked.push(...blockedForArena)
+        }
+      }
+      setBlocked(new Set(allBlocked))
+      setLoadingBlocked(false)
+    }
+    if (arenas.length > 0) {
+      loadBlockedSlots()
+    }
+  }, [arenas])
+
+  const toggle = async (key: string) => {
+    const [arenaId] = key.split('-')
+    const isBlocked = blocked.has(key)
+    const success = await setBlockedSlot(arenaId, key, !isBlocked)
+    if (success) {
+      setBlocked((prev) => {
+        const next = new Set(prev)
+        if (next.has(key)) next.delete(key)
+        else next.add(key)
+        return next
+      })
+    } else {
+      alert('Failed to update slot status')
+    }
   }
 
-  if (loading) return <div className="text-mist">Loading...</div>
+  if (loading || loadingBlocked) return <LoadingState message="Loading..." />
 
   return (
     <div className="max-w-7xl mx-auto">
       <h1 className="font-display text-display-md text-chalk mb-6">SLOT MANAGER</h1>
-      <p className="text-mist text-sm mb-6">Click a cell to toggle blocked status (local only)</p>
+      <p className="text-mist text-sm mb-6">Click a cell to toggle blocked status</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[500px] lg:min-w-[600px]">
           <thead>
@@ -380,10 +406,9 @@ export function OwnerDashboard() {
     <Routes>
       <Route element={<DashboardLayout role="owner" links={links} />}>
         <Route index element={<OwnerOverview />} />
-        <Route path="home" element={<HomeTab />} />
         <Route path="bookings" element={<OwnerBookings />} />
         <Route path="arenas" element={<OwnerArenas />} />
-        <Route path="campaigns" element={<OwnerCampaigns />} />
+        <Route path="campaigns" element={<OwnerCampaigns embedded={true} />} />
         <Route path="analytics" element={<OwnerAnalytics />} />
         <Route path="slots" element={<SlotManager />} />
       </Route>

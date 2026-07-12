@@ -7,26 +7,35 @@ import { BtnLink } from '../ui/Btn'
 import { StatCard } from '../ui/StatCard'
 import { SportTag } from '../ui/SportTag'
 import { useAuth } from '../../context/AuthContext'
-import { activityFeed } from '../../data/activity'
-import { demoOwner } from '../../data/users'
 import { formatPKR } from '../../utils/formatters'
 import type { SportType } from '../../types'
-import { fetchArenas, fetchPlayerBookings } from '../../services/supabaseData'
-import type { Arena, Booking } from '../../types'
+import { fetchArenas, fetchPlayerBookings, fetchOwnerRevenue, fetchRecentActivity } from '../../services/supabaseData'
+import type { Arena, Booking, ActivityItem } from '../../types'
 
 export function HomeTab() {
   const { user } = useAuth()
   const [allArenas, setAllArenas] = useState<Arena[]>([])
   const [playerBookings, setPlayerBookings] = useState<Booking[]>([])
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
+  const [ownerRevenue, setOwnerRevenue] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
-      const data = await fetchArenas()
+      const [data, activity] = await Promise.all([
+        fetchArenas(),
+        fetchRecentActivity(6),
+      ])
       setAllArenas(data)
+      setRecentActivity(activity)
+
       if (user?.id && user.role === 'player') {
-        const bookings = await fetchPlayerBookings(user.id)
+        const { bookings } = await fetchPlayerBookings(user.id)
         setPlayerBookings(bookings)
+      }
+      if (user?.role === 'owner' && user.arenaIds?.length) {
+        const revenue = await fetchOwnerRevenue(user.arenaIds)
+        setOwnerRevenue(revenue)
       }
       setLoading(false)
     }
@@ -62,7 +71,7 @@ export function HomeTab() {
               ownerArenas.reduce((acc, arena) => acc + arena.occupancyRate, 0) / ownerArenas.length
             )}%` : '0%',
           },
-          { label: 'Revenue (Demo)', value: formatPKR(demoOwner.totalRevenue) },
+          { label: 'Total Revenue', value: formatPKR(ownerRevenue) },
         ]
       : [
           { label: 'Upcoming Bookings', value: upcomingBookings.length.toString() },
@@ -141,7 +150,10 @@ export function HomeTab() {
       {/* Live Activity */}
       <h2 className="font-display text-xl text-chalk mb-4">LIVE COMMUNITY PULSE</h2>
       <div className="relative pl-6 border-l border-line space-y-6">
-        {activityFeed.slice(0, 6).map((activity) => (
+        {recentActivity.length === 0 && (
+          <p className="text-mist text-sm">No recent activity yet.</p>
+        )}
+        {recentActivity.map((activity) => (
           <div key={activity.id} className="relative">
             <span className="absolute -left-[29px] w-3 h-3 rounded-full bg-lime top-1" />
             <p className="text-chalk text-[15px]">

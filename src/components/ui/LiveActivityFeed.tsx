@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { activityFeed } from '../../data/activity'
+import { fetchRecentActivity } from '../../services/supabaseData'
 import { SportTag } from './SportTag'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
 import type { ActivityItem } from '../../types'
@@ -8,21 +8,34 @@ import type { ActivityItem } from '../../types'
 const VISIBLE = 4
 
 export function LiveActivityFeed() {
-  const [items, setItems] = useState<ActivityItem[]>(activityFeed.slice(0, VISIBLE))
+  const [allItems, setAllItems] = useState<ActivityItem[]>([])
+  const [items, setItems] = useState<ActivityItem[]>([])
   const feedIndex = useRef(VISIBLE)
   const { ref, inView } = useScrollReveal(0.1)
 
   useEffect(() => {
+    fetchRecentActivity(30).then((data) => {
+      if (data.length === 0) return
+      setAllItems(data)
+      setItems(data.slice(0, VISIBLE))
+      feedIndex.current = VISIBLE
+    })
+  }, [])
+
+  useEffect(() => {
+    if (allItems.length < 2) return
     const interval = setInterval(() => {
-      const next = (feedIndex.current + 1) % activityFeed.length
-      feedIndex.current = next
+      const next = feedIndex.current % allItems.length
+      feedIndex.current = next + 1
       setItems((prev) => {
-        const newItem = activityFeed[next]
+        const newItem = allItems[next]
         return [newItem, ...prev.slice(0, VISIBLE - 1)]
       })
     }, 2500)
     return () => clearInterval(interval)
-  }, [])
+  }, [allItems])
+
+  if (items.length === 0) return null
 
   return (
     <motion.div

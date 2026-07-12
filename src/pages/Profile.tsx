@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, Link } from 'react-router-dom'
-import { Bell, CalendarDays, Camera, Heart, KeyRound, MapPin, Pencil } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { Navigate, Link, useNavigate } from 'react-router-dom'
+import { Bell, CalendarDays, Camera, Heart, KeyRound, LogOut, Mail, MapPin, Pencil, Phone, RotateCw, X } from 'lucide-react'
 import { format, isFuture, parseISO } from 'date-fns'
+import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
-import { BtnLink } from '../components/ui/Btn'
+import { Btn, BtnLink } from '../components/ui/Btn'
 import { StatCard } from '../components/ui/StatCard'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -22,8 +24,35 @@ import {
 import type { Arena, Booking, NotificationRecord, OwnerRecord, ProfileRecord } from '../types'
 import { cn, formatPKR } from '../utils/formatters'
 
+/** Crop the image to a square blob using the pixel area from react-easy-crop */
+async function getCroppedBlob(imageSrc: string, croppedArea: Area, rotation: number): Promise<Blob> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.addEventListener('load', () => resolve(img))
+    img.addEventListener('error', reject)
+    img.src = imageSrc
+  })
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')!
+  const size = 400
+  canvas.width = size
+  canvas.height = size
+  const rad = (rotation * Math.PI) / 180
+  ctx.translate(size / 2, size / 2)
+  ctx.rotate(rad)
+  ctx.translate(-size / 2, -size / 2)
+  const scaleX = size / croppedArea.width
+  const scaleY = size / croppedArea.height
+  ctx.scale(scaleX, scaleY)
+  ctx.drawImage(image, -croppedArea.x, -croppedArea.y, image.naturalWidth, image.naturalHeight)
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => { if (blob) resolve(blob); else reject(new Error('toBlob failed')) }, 'image/jpeg', 0.92)
+  })
+}
+
 export function Profile() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileRecord | null>(null)
   const [ownerRecord, setOwnerRecord] = useState<OwnerRecord | null>(null)
   const [favorites, setFavorites] = useState<Arena[]>([])
@@ -35,12 +64,22 @@ export function Profile() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  // Crop modal state
+  const [cropImageSrc, setCropImageSrc] = useState('')
+  const [showCropper, setShowCropper] = useState(false)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [cropRotation, setCropRotation] = useState(0)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const onCropComplete = useCallback((_: Area, pixels: Area) => { setCroppedAreaPixels(pixels) }, [])
+
   // Edit profile panel
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
   const [editCity, setEditCity] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [editSuccess, setEditSuccess] = useState(false)
+  const [editError, setEditError] = useState('')
 
   // Change password
   const [currentPassword, setCurrentPassword] = useState('')
@@ -73,12 +112,12 @@ export function Profile() {
       setOwnerRecord(ownerData)
       setFavorites(favoritesData)
       setNotifications(notificationsData)
-      setBookings(bookingData)
+      setBookings(bookingData.bookings)
       setArenas(arenaData)
       setAvatarUrl(profileData?.avatarUrl || currentUser.avatar)
       setEditName(profileData?.fullName || currentUser.name || '')
       setEditPhone(profileData?.phone || '')
-      setEditCity(profileData?.cityId || '')
+      setEditCity(profileData?.cityName || '')
       setLoading(false)
     }
 
@@ -89,17 +128,48 @@ export function Profile() {
     }
   }, [user])
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !user) return
-    setAvatarUploading(true)
-    const newUrl = await uploadAvatar(user.id, file)
-    if (newUrl) setAvatarUrl(newUrl)
+    if (!file.type.startsWith('image/')) return
+    const objectUrl = URL.createObjectURL(file)
+    setCropImageSrc(objectUrl)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCropRotation(0)
+    setShowCropper(true)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
+  const handleApplyCrop = async () => {
+    if (!cropImageSrc || !croppedAreaPixels || !user) return
+    setShowCropper(false)
+    try {
+      const blob = await getCroppedBlob(cropImageSrc, croppedAreaPixels, cropRotation)
+      // Show the cropped result immediately via a local blob URL — no waiting for upload
+      const localPreview = URL.createObjectURL(blob)
+      setAvatarUrl(localPreview)
+      // Upload in the background
+      setAvatarUploading(true)
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+      const remoteUrl = await uploadAvatar(user.id, file)
+      // Swap to the remote URL once it's ready (keeps cache-bust param)
+      if (remoteUrl) setAvatarUrl(remoteUrl)
+    } catch {
+      console.error('Crop/upload failed')
+    }
     setAvatarUploading(false)
   }
 
   const handleEditSave = async () => {
     if (!user) return
+
+    // Basic validation
+    if (editCity.trim() && editCity.trim().length < 2) {
+      setEditError('City name must be at least 2 characters.')
+      return
+    }
+
     setEditSaving(true)
     const ok = await updateProfile(user.id, {
       fullName: editName.trim() || undefined,
@@ -199,101 +269,97 @@ export function Profile() {
   return (
     <>
       <Navbar />
-      <PageWrapper className="pt-20 md:pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
-          <section className="rounded-[28px] border border-line bg-gradient-to-br from-turf via-slate/70 to-ground p-5 md:p-8 noise-overlay overflow-hidden">
-            <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 lg:gap-8 items-end">
-              <div className="space-y-5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-xs uppercase tracking-[0.24em] text-mist font-mono">
-                    Account Hub
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-lime text-on-lime text-xs font-mono uppercase">
-                    {roleLabel}
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-end gap-5">
-                  {/* Avatar with upload overlay */}
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="relative group w-24 h-24 md:w-28 md:h-28 shrink-0 rounded-[24px] overflow-hidden border border-line shadow-[0_18px_40px_rgba(0,0,0,0.35)] focus:outline-none focus:ring-2 focus:ring-lime"
-                    aria-label="Change profile picture"
-                  >
-                    <img
-                      src={avatar}
-                      alt={displayName}
-                      className="w-full h-full object-cover"
-                    />
-                    <span className={cn(
-                      'absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ground/70 transition-opacity',
-                      avatarUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    )}>
-                      {avatarUploading
-                        ? <span className="text-[10px] font-mono text-lime">Uploading…</span>
-                        : <>
-                            <Camera size={18} className="text-chalk" />
-                            <span className="text-[10px] font-mono text-chalk">Change</span>
-                          </>
-                      }
-                    </span>
-                  </button>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
-                  <div>
-                    <h1 className="font-display text-[clamp(2.5rem,8vw,5.5rem)] text-chalk leading-[0.92]">
-                      {displayName}
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm md:text-base text-mist">
-                      Personal details, notifications, saved venues, and booking history all in one place.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-line bg-ground/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Email</p>
-                  <p className="mt-2 text-chalk text-sm md:text-base break-all">{profile?.email || user.email}</p>
-                </div>
-                <div className="rounded-2xl border border-line bg-ground/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Phone</p>
-                  <p className="mt-2 text-chalk text-sm md:text-base">
-                    {profile?.phone || <span className="text-mist/60 italic">Not set</span>}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-line bg-ground/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">City</p>
-                  <p className="mt-2 text-chalk text-sm md:text-base">
-                    {profile?.cityId || <span className="text-mist/60 italic">Not set</span>}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-line bg-ground/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-mist font-mono">Role</p>
-                  <p className="mt-2 text-chalk text-sm md:text-base capitalize">{user.role}</p>
-                </div>
-              </div>
+      <PageWrapper className="pt-20 md:pt-24 pb-20 md:pb-16">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
+
+          {/* ── Hero card ─────────────────────────────────────────────── */}
+          <section className="rounded-[28px] border border-line bg-gradient-to-b from-turf to-ground overflow-hidden noise-overlay">
+            {/* Top strip */}
+            <div className="h-28 bg-gradient-to-r from-slate via-lime/10 to-slate relative">
+              <div className="absolute inset-0 grid-bg opacity-30" />
+              {/* Sign out — top right */}
+              <button
+                type="button"
+                onClick={() => { logout(); navigate('/') }}
+                className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-ground/60 backdrop-blur-sm border border-line text-mist hover:text-chalk hover:border-lime/40 transition-colors text-xs font-body"
+              >
+                <LogOut size={13} />
+                Sign Out
+              </button>
             </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <BtnLink to="/arenas" className="px-5 py-3 text-sm">
-                Browse Arenas
-              </BtnLink>
-              <BtnLink to="/booking" variant="outline" className="px-5 py-3 text-sm">
-                Quick Book
-              </BtnLink>
-              {user.role === 'owner' ? (
-                <BtnLink to="/dashboard/owner" variant="outline" className="px-5 py-3 text-sm">
-                  Owner Dashboard
+
+            {/* Avatar — overlaps the strip */}
+            <div className="flex flex-col items-center -mt-14 pb-6 px-6">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="relative group w-28 h-28 rounded-full overflow-hidden border-4 border-ground shadow-[0_8px_32px_rgba(0,0,0,0.5)] focus:outline-none focus:ring-2 focus:ring-lime focus:ring-offset-2 focus:ring-offset-ground shrink-0"
+                aria-label="Change profile picture"
+              >
+                <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                <span className={cn(
+                  'absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ground/75 transition-opacity rounded-full',
+                  avatarUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                )}>
+                  {avatarUploading
+                    ? <span className="text-[10px] font-mono text-lime">Uploading…</span>
+                    : <>
+                        <Camera size={20} className="text-chalk" />
+                        <span className="text-[9px] font-mono text-chalk tracking-wide">CHANGE</span>
+                      </>
+                  }
+                </span>
+              </button>
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+
+              {/* Name + role */}
+              <div className="mt-4 text-center">
+                <h1 className="font-display text-[clamp(1.8rem,6vw,3rem)] text-chalk leading-tight">
+                  {displayName}
+                </h1>
+                <span className="inline-block mt-2 px-3 py-1 rounded-full bg-lime/10 border border-lime/30 text-lime text-xs font-mono uppercase tracking-wider">
+                  {roleLabel}
+                </span>
+              </div>
+
+              {/* Info pills */}
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate border border-line text-mist text-xs font-body">
+                  <Mail size={11} className="shrink-0" />
+                  {profile?.email || user.email}
+                </span>
+                {profile?.phone && (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate border border-line text-mist text-xs font-body">
+                    <Phone size={11} className="shrink-0" />
+                    {profile.phone}
+                  </span>
+                )}
+                {profile?.cityName && (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate border border-line text-mist text-xs font-body">
+                    <MapPin size={11} className="shrink-0" />
+                    {profile.cityName}
+                  </span>
+                )}
+              </div>
+
+              {/* Quick actions */}
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <BtnLink to="/arenas" className="px-5 py-2.5 text-sm">
+                  Browse Arenas
                 </BtnLink>
-              ) : (
-                <BtnLink to="/dashboard/player" variant="outline" className="px-5 py-3 text-sm">
-                  Player Dashboard
+                <BtnLink to="/booking" variant="outline" className="px-5 py-2.5 text-sm">
+                  Quick Book
                 </BtnLink>
-              )}
+                {user.role === 'owner' ? (
+                  <BtnLink to="/dashboard/owner" variant="outline" className="px-5 py-2.5 text-sm">
+                    Owner Dashboard
+                  </BtnLink>
+                ) : (
+                  <BtnLink to="/bookings" variant="outline" className="px-5 py-2.5 text-sm">
+                    My Bookings
+                  </BtnLink>
+                )}
+              </div>
             </div>
           </section>
 
@@ -353,19 +419,21 @@ export function Profile() {
                     {profile?.email || user.email}
                   </div>
                 </div>
+                {editError && (
+                  <p className="text-booked text-sm">{editError}</p>
+                )}
                 <div className="pt-1">
-                  <button
+                  <Btn
                     type="button"
                     onClick={handleEditSave}
                     disabled={editSaving}
                     className={cn(
-                      'w-full py-3 rounded-xl font-mono text-sm transition-colors',
-                      editSuccess ? 'bg-lime/30 text-lime' : 'bg-lime text-on-lime hover:bg-lime/80',
-                      editSaving && 'opacity-60 cursor-not-allowed'
+                      'w-full py-3',
+                      editSuccess && 'bg-lime/30 text-lime'
                     )}
                   >
                     {editSaving ? 'Saving…' : editSuccess ? 'Saved ✓' : 'Save Changes'}
-                  </button>
+                  </Btn>
                 </div>
                 {user.role === 'owner' && ownerRecord && (
                   <div className="rounded-xl border border-line bg-slate p-4 mt-2">
@@ -383,35 +451,15 @@ export function Profile() {
                 <h2 className="font-display text-2xl text-chalk">Notifications</h2>
                 <Bell size={18} className="text-lime shrink-0" />
               </div>
-              <div className="mt-5 space-y-3">
-                {notifications.length === 0 && (
-                  <div className="rounded-2xl border border-line bg-slate p-4 text-sm text-mist">
-                    No notifications yet. New activity from bookings and promotions will appear here.
-                  </div>
-                )}
-                {notifications.slice(0, 5).map((notification) => (
-                  <article
-                    key={notification.id}
-                    className={cn(
-                      'rounded-2xl border p-4 transition-colors',
-                      notification.isRead ? 'border-line bg-slate' : 'border-lime/30 bg-lime/5'
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-chalk font-body">{notification.title}</h3>
-                      <span className="text-xs text-mist font-mono uppercase">{notification.type}</span>
-                    </div>
-                    <p className="mt-2 text-sm text-mist leading-relaxed">{notification.message}</p>
-                    <p className="mt-3 text-xs text-mist font-mono">
-                      {format(parseISO(notification.createdAt), 'd MMM yyyy · HH:mm')}
-                    </p>
-                    {notification.link && (
-                      <Link to={notification.link} className="inline-flex mt-3 text-sm text-lime hover:text-chalk">
-                        Open item
-                      </Link>
-                    )}
-                  </article>
-                ))}
+              <div className="mt-4">
+                <p className="text-mist text-sm mb-4">
+                  {unreadNotifications.length > 0
+                    ? `You have ${unreadNotifications.length} unread notification${unreadNotifications.length > 1 ? 's' : ''}.`
+                    : 'All caught up — no unread notifications.'}
+                </p>
+                <BtnLink to="/notifications" variant="outline" className="w-full text-center py-3 text-sm">
+                  View All Notifications →
+                </BtnLink>
               </div>
             </div>
           </section>
@@ -461,20 +509,16 @@ export function Profile() {
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-4">
-              <button
+              <Btn
                 type="button"
                 onClick={handlePasswordChange}
                 disabled={pwSaving}
                 className={cn(
-                  'px-6 py-3 rounded-xl font-mono text-sm transition-colors',
-                  pwSuccess
-                    ? 'bg-lime/30 text-lime'
-                    : 'bg-lime text-on-lime hover:bg-lime/80',
-                  pwSaving && 'opacity-60 cursor-not-allowed'
+                  pwSuccess && 'bg-lime/30 text-lime'
                 )}
               >
                 {pwSaving ? 'Updating…' : pwSuccess ? 'Password updated ✓' : 'Update Password'}
-              </button>
+              </Btn>
               {pwError && (
                 <p className="text-booked text-sm font-body">{pwError}</p>
               )}
@@ -557,6 +601,74 @@ export function Profile() {
         </div>
       </PageWrapper>
       <Footer />
+
+      {/* ── Avatar crop modal ───────────────────────────────────────── */}
+      {showCropper && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
+          <div className="bg-slate border border-line rounded-lg w-full max-w-sm flex flex-col gap-4 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-chalk font-display text-lg">Crop Photo</h3>
+              <button
+                type="button"
+                onClick={() => setShowCropper(false)}
+                className="text-mist hover:text-chalk transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="relative w-full h-72 rounded-md overflow-hidden bg-ground">
+              <Cropper
+                image={cropImageSrc}
+                crop={crop}
+                zoom={zoom}
+                rotation={cropRotation}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+
+            <div>
+              <label className="text-mist text-xs block mb-1.5">Zoom</label>
+              <input
+                type="range" min={1} max={3} step={0.05}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full accent-lime"
+              />
+            </div>
+
+            <div>
+              <label className="text-mist text-xs block mb-1.5">Rotation</label>
+              <input
+                type="range" min={0} max={360} step={1}
+                value={cropRotation}
+                onChange={(e) => setCropRotation(Number(e.target.value))}
+                className="w-full accent-lime"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Btn
+                type="button"
+                onClick={() => setCropRotation((r) => (r + 90) % 360)}
+                variant="outline"
+                className="flex-1 flex items-center justify-center gap-2 text-sm"
+              >
+                <RotateCw size={15} />
+                Rotate
+              </Btn>
+              <Btn type="button" onClick={handleApplyCrop} className="flex-1 text-sm">
+                Apply Crop
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

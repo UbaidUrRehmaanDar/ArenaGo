@@ -104,7 +104,7 @@ export function ArenaSchedule() {
                       View daily availability, booking pressure, and peak windows directly from the time slots table.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-2">
-                      <BtnLink to={`/booking`} className="px-5 py-3 text-sm">
+                      <BtnLink to={`/arenas/${arena.slug}`} className="px-5 py-3 text-sm">
                         Start Booking
                       </BtnLink>
                       <BtnLink to={`/arenas/${arena.slug}`} variant="outline" className="px-5 py-3 text-sm">
@@ -257,7 +257,7 @@ export function ArenaSchedule() {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-2">
-                <BtnLink to="/booking" className="px-5 py-3 text-sm">
+                <BtnLink to={`/arenas/${arena.slug}`} className="px-5 py-3 text-sm">
                   Reserve Slot
                 </BtnLink>
                 <BtnLink to={`/arenas/${arena.slug}`} variant="outline" className="px-5 py-3 text-sm">

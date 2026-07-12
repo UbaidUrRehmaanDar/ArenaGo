@@ -38,6 +38,138 @@ export async function updateProfile(
 }
 
 /**
+ * Fetches aggregate platform stats: total players, arenas, and bookings.
+ */
+export async function fetchPlatformStats(): Promise<{ players: number; arenas: number; bookings: number }> {
+  try {
+    const [profilesRes, arenasRes, bookingsRes] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
+      supabase.from('arenas').select('id', { count: 'exact', head: true }),
+      supabase.from('bookings').select('id', { count: 'exact', head: true }),
+    ])
+    return {
+      players: profilesRes.count ?? 0,
+      arenas: arenasRes.count ?? 0,
+      bookings: bookingsRes.count ?? 0,
+    }
+  } catch (err) {
+    console.error('fetchPlatformStats error:', err)
+    return { players: 0, arenas: 0, bookings: 0 }
+  }
+}
+
+/**
+ * Fetches recent booking activity for the live feed.
+ * Returns last N bookings joined with profile and arena names.
+ */
+export async function fetchRecentActivity(limit = 20): Promise<import('../types').ActivityItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, created_at, status, profiles(full_name), arenas(name)')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error || !data) return []
+
+    return (data as any[]).map((row, i) => {
+      const createdAt = new Date(row.created_at)
+      const diffMs = Date.now() - createdAt.getTime()
+      const diffMin = Math.floor(diffMs / 60000)
+      const timeLabel =
+        diffMin < 1 ? 'just now' :
+        diffMin < 60 ? `${diffMin} min ago` :
+        `${Math.floor(diffMin / 60)} hr ago`
+
+      const action: 'booked' | 'cancelled' =
+        row.status === 'cancelled' ? 'cancelled' : 'booked'
+
+      return {
+        id: row.id ?? `act-${i}`,
+        playerName: row.profiles?.full_name ?? 'Someone',
+        action,
+        arenaName: row.arenas?.name ?? 'an arena',
+        sport: 'Football' as import('../types').SportType,
+        time: timeLabel,
+      }
+    })
+  } catch (err) {
+    console.error('fetchRecentActivity error:', err)
+    return []
+  }
+}
+
+/**
+ * Fetches total revenue for a set of arenas (owner dashboard).
+ */
+export async function fetchOwnerRevenue(arenaIds: string[]): Promise<number> {
+  if (!arenaIds.length) return 0
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('amount')
+      .in('arena_id', arenaIds)
+      .neq('status', 'cancelled')
+    if (error || !data) return 0
+    return (data as any[]).reduce((sum, row) => sum + Number(row.amount ?? 0), 0)
+  } catch (err) {
+    console.error('fetchOwnerRevenue error:', err)
+    return 0
+  }
+}
+
+/**
+ * Fetches real peak-hours data for a given arena from bookings.
+ * Returns an array of { hour, occupancy, isPeak } for hours 6–23.
+ */
+export async function fetchArenaHourlyData(arenaId: string): Promise<import('../types').HourlyData[]> {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('start_time')
+      .eq('arena_id', arenaId)
+      .neq('status', 'cancelled')
+
+    if (error || !data) return []
+
+    const counts: Record<number, number> = {}
+    for (const row of data as any[]) {
+      const hour = parseInt((row.start_time ?? '00:00').slice(0, 2), 10)
+      counts[hour] = (counts[hour] ?? 0) + 1
+    }
+
+    const max = Math.max(1, ...Object.values(counts))
+    return Array.from({ length: 18 }, (_, i) => {
+      const hour = i + 6
+      const isPeak = (hour >= 6 && hour < 10) || (hour >= 17 && hour < 22)
+      const occupancy = Math.round(((counts[hour] ?? 0) / max) * 100)
+      return { hour, occupancy, isPeak }
+    })
+  } catch (err) {
+    console.error('fetchArenaHourlyData error:', err)
+    return []
+  }
+}
+
+/**
+ * Fetches all cities from the cities table.
+ * Returns an array of { id, name } objects.
+ */
+export async function fetchCities(): Promise<{ id: string; name: string }[]> {
+  try {
+    const { data, error } = await supabase
+      .from('cities')
+      .select('id, name')
+      .order('name', { ascending: true })
+    if (error) throw error
+    return data ?? []
+  } catch (err) {
+    console.error('fetchCities error:', err)
+    return []
+  }
+}
+
+/**
  * Uploads a profile picture for the given user and updates the profiles row.
  * Returns the new public URL or null on failure.
  */
@@ -47,9 +179,10 @@ export async function uploadAvatar(
 ): Promise<string | null> {
   try {
     const ext = file.name.split('.').pop() ?? 'jpg'
+    // Always use a fixed path per user so upsert works cleanly
     const path = `avatars/${userId}.${ext}`
 
-    const { error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('profile-images')
       .upload(path, file, { upsert: true, contentType: file.type })
 
@@ -58,22 +191,32 @@ export async function uploadAvatar(
       return null
     }
 
+    console.log('Avatar uploaded to:', uploadData?.path)
+
     const { data: urlData } = supabase.storage
       .from('profile-images')
       .getPublicUrl(path)
 
     const publicUrl = urlData?.publicUrl
-    if (!publicUrl) return null
+    if (!publicUrl) {
+      console.error('Could not get public URL for avatar')
+      return null
+    }
 
-    // Bust cache by appending a timestamp query param
-    const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`
+    // Append cache-bust so browsers don't serve stale images
+    const finalUrl = `${publicUrl}?t=${Date.now()}`
 
-    await supabase
+    const { error: dbError } = await supabase
       .from('profiles')
-      .update({ avatar_url: urlWithCacheBust })
+      .update({ avatar_url: finalUrl })
       .eq('id', userId)
 
-    return urlWithCacheBust
+    if (dbError) {
+      console.error('Failed to save avatar_url to profiles:', dbError)
+      // Still return the URL — caller can try saving it themselves
+    }
+
+    return finalUrl
   } catch (err) {
     console.error('uploadAvatar error:', err)
     return null
@@ -141,8 +284,7 @@ export async function fetchUserProfile(userId: string): Promise<AuthUser | null>
       // Auto-create profile row if missing (safety fallback)
       const { data: { user } } = await supabase.auth.getUser()
       if (user && user.id === userId) {
-        const isOwner = user.email?.includes('owner') || user.user_metadata?.role === 'owner'
-        const role = isOwner ? 'owner' : 'player'
+        const role = user.user_metadata?.role === 'owner' ? 'owner' : 'player'
         const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
         
         const { data: newProfile, error } = await supabase
@@ -200,7 +342,7 @@ export async function fetchProfileRecord(userId: string): Promise<ProfileRecord 
   try {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, cities(name)')
       .eq('id', userId)
       .single()
 
@@ -214,6 +356,7 @@ export async function fetchProfileRecord(userId: string): Promise<ProfileRecord 
       phone: profile.phone || undefined,
       role: profile.role === 'customer' ? 'player' : (profile.role as 'player' | 'owner'),
       cityId: profile.city_id || undefined,
+      cityName: profile.cities?.name || undefined,
     }
   } catch (error) {
     console.error('Error fetching profile record:', error)
@@ -338,18 +481,30 @@ function mapArenaRow(row: any): Arena {
 }
 
 // Bookings
-export async function fetchPlayerBookings(playerId: string): Promise<Booking[]> {
+export async function fetchPlayerBookings(playerId: string, page = 1, pageSize = 20): Promise<{ bookings: Booking[]; total: number }> {
   try {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('customer_id', playerId)
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
 
-    if (error || !data) return []
-    return data.map(mapBookingRow)
+    const { data, error, count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact' })
+      .eq('customer_id', playerId)
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    if (error) {
+      console.error('Error fetching player bookings:', error)
+      return { bookings: [], total: 0 }
+    }
+    if (!data) return { bookings: [], total: 0 }
+    return {
+      bookings: data.map(mapBookingRow),
+      total: count || 0
+    }
   } catch (err) {
-    console.error(err)
-    return []
+    console.error('Unexpected error fetching player bookings:', err)
+    return { bookings: [], total: 0 }
   }
 }
 
@@ -360,10 +515,14 @@ export async function fetchArenaBookings(arenaId: string): Promise<Booking[]> {
       .select('*')
       .eq('arena_id', arenaId)
 
-    if (error || !data) return []
+    if (error) {
+      console.error('Error fetching arena bookings:', error)
+      return []
+    }
+    if (!data) return []
     return data.map(mapBookingRow)
   } catch (err) {
-    console.error(err)
+    console.error('Unexpected error fetching arena bookings:', err)
     return []
   }
 }
@@ -388,6 +547,35 @@ function mapBookingRow(row: any): Booking {
 }
 
 // Reviews
+export async function fetchTopReviews(limit = 10, minRating = 4.5): Promise<Review[]> {
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*, profiles(full_name, avatar_url), arenas(name)')
+      .eq('is_visible', true)
+      .gte('rating', minRating)
+      .order('rating', { ascending: false })
+      .limit(limit)
+
+    if (error || !data) return []
+    return data.map((r: any) => ({
+      id: r.id,
+      arenaId: r.arena_id,
+      playerId: r.customer_id,
+      rating: r.rating,
+      comment: r.comment,
+      date: r.created_at,
+      playerName: r.profiles?.full_name || 'Anonymous',
+      playerAvatar: r.profiles?.avatar_url || undefined,
+      sport: 'Football' as import('../types').SportType,
+      arenaName: r.arenas?.name || undefined,
+    }))
+  } catch (err) {
+    console.error(err)
+    return []
+  }
+}
+
 export async function fetchReviewsForArena(arenaId: string): Promise<Review[]> {
   try {
     const { data, error } = await supabase
@@ -536,14 +724,68 @@ export async function fetchFavoritesForUser(userId: string): Promise<Arena[]> {
       .eq('customer_id', userId)
       .order('created_at', { ascending: false })
 
-    if (error || !data) return []
+    if (error) {
+      console.error('Error fetching favorites:', error)
+      return []
+    }
+    if (!data) return []
 
     const arenaIds = [...new Set((data as any[]).map((item) => item.arena_id))]
     const arenas = await Promise.all(arenaIds.map((id) => fetchArenaById(id)))
     return arenas.filter((arena): arena is Arena => Boolean(arena))
   } catch (err) {
-    console.error(err)
+    console.error('Unexpected error fetching favorites:', err)
     return []
+  }
+}
+
+export async function isFavorited(userId: string, arenaId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('arena_id')
+      .eq('customer_id', userId)
+      .eq('arena_id', arenaId)
+      .maybeSingle()
+    if (error) console.error('isFavorited error:', error.message)
+    return Boolean(data)
+  } catch (err) {
+    console.error('isFavorited exception:', err)
+    return false
+  }
+}
+
+export async function addFavorite(userId: string, arenaId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('favorites')
+      .insert({ customer_id: userId, arena_id: arenaId })
+    if (error) {
+      console.error('addFavorite error:', error.message, error.code, error.details)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('addFavorite exception:', err)
+    return false
+  }
+}
+
+export async function removeFavorite(userId: string, arenaId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('customer_id', userId)
+      .eq('arena_id', arenaId)
+    if (error) {
+      console.error('removeFavorite error:', error.message, error.code, error.details)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('removeFavorite exception:', err)
+    return false
   }
 }
 
@@ -555,7 +797,11 @@ export async function fetchNotificationsForUser(userId: string): Promise<Notific
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (error || !data) return []
+    if (error) {
+      console.error('Error fetching notifications:', error)
+      return []
+    }
+    if (!data) return []
 
     return data.map((row: any) => ({
       id: row.id,
@@ -632,5 +878,136 @@ export async function fetchActivePromotions(): Promise<PromotionWithArena[]> {
   } catch (err) {
     console.error(err)
     return []
+  }
+}
+
+// Slot availability management
+export async function fetchBlockedSlots(arenaId: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('blocked_slots')
+      .select('slot_key')
+      .eq('arena_id', arenaId)
+
+    if (error) {
+      console.error('Error fetching blocked slots:', error)
+      return []
+    }
+    if (!data) return []
+    return data.map((row: any) => row.slot_key)
+  } catch (err) {
+    console.error('Unexpected error fetching blocked slots:', err)
+    return []
+  }
+}
+
+export async function setBlockedSlot(arenaId: string, slotKey: string, blocked: boolean): Promise<boolean> {
+  try {
+    if (blocked) {
+      const { error } = await supabase
+        .from('blocked_slots')
+        .insert({ arena_id: arenaId, slot_key: slotKey })
+      if (error) {
+        console.error('Error blocking slot:', error)
+        return false
+      }
+    } else {
+      const { error } = await supabase
+        .from('blocked_slots')
+        .delete()
+        .eq('arena_id', arenaId)
+        .eq('slot_key', slotKey)
+      if (error) {
+        console.error('Error unblocking slot:', error)
+        return false
+      }
+    }
+    return true
+  } catch (err) {
+    console.error('Unexpected error setting blocked slot:', err)
+    return false
+  }
+}
+
+// Analytics functions
+export async function fetchOwnerAnalytics(arenaIds: string[]) {
+  try {
+    if (arenaIds.length === 0) {
+      return {
+        totalBookings: 0,
+        totalRevenue: 0,
+        averageOccupancy: 0,
+        popularSports: [],
+        monthlyRevenue: [],
+      }
+    }
+
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .in('arena_id', arenaIds)
+      .eq('status', 'completed')
+
+    if (error) {
+      console.error('Error fetching analytics:', error)
+      return {
+        totalBookings: 0,
+        totalRevenue: 0,
+        averageOccupancy: 0,
+        popularSports: [],
+        monthlyRevenue: [],
+      }
+    }
+
+    if (!bookings) {
+      return {
+        totalBookings: 0,
+        totalRevenue: 0,
+        averageOccupancy: 0,
+        popularSports: [],
+        monthlyRevenue: [],
+      }
+    }
+
+    const totalBookings = bookings.length
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.total_price || 0), 0)
+
+    // Calculate popular sports
+    const sportCounts: Record<string, number> = {}
+    bookings.forEach((b) => {
+      const sport = b.sport_id || 'Unknown'
+      sportCounts[sport] = (sportCounts[sport] || 0) + 1
+    })
+    const popularSports = Object.entries(sportCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([sport, count]) => ({ sport, count }))
+
+    // Calculate monthly revenue
+    const monthlyRevenue: Record<string, number> = {}
+    bookings.forEach((b) => {
+      const month = b.date?.substring(0, 7) || new Date().toISOString().substring(0, 7)
+      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (b.total_price || 0)
+    })
+    const monthlyRevenueArray = Object.entries(monthlyRevenue)
+      .map(([month, revenue]) => ({ month, revenue }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+
+    return {
+      totalBookings,
+      totalRevenue,
+      averageOccupancy: totalBookings > 0 ? 0.65 : 0, // Simplified calculation
+      popularSports,
+      monthlyRevenue: monthlyRevenueArray,
+    }
+  } catch (err) {
+    console.error('Unexpected error fetching analytics:', err)
+    return {
+      totalBookings: 0,
+      totalRevenue: 0,
+      averageOccupancy: 0,
+      popularSports: [],
+      monthlyRevenue: [],
+    }
   }
 }

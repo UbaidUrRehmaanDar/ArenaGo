@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { reviews } from '../../data/reviews'
 import { ReviewCard } from '../ui/ReviewCard'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
-
-const topReviews = reviews.filter((r) => r.rating >= 4.7).slice(0, 5)
+import { fetchTopReviews } from '../../services/supabaseData'
+import type { Review } from '../../types'
 
 export function Testimonials() {
+  const [topReviews, setTopReviews] = useState<Review[]>([])
   const [quoteIndex, setQuoteIndex] = useState(0)
   const { ref, inView } = useScrollReveal(0.1)
 
   useEffect(() => {
+    fetchTopReviews(10, 4.5).then(setTopReviews)
+  }, [])
+
+  useEffect(() => {
+    if (topReviews.length < 2) return
     const interval = setInterval(() => {
-      setQuoteIndex((i) => (i + 1) % topReviews.length)
+      setQuoteIndex((i) => (i + 1) % Math.min(5, topReviews.length))
     }, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [topReviews])
+
+  const quoteReviews = topReviews.slice(0, 5)
+  const cardReviews = topReviews.slice(0, 6)
+
+  if (topReviews.length === 0) return null
 
   return (
     <section className="py-20 bg-turf">
@@ -37,11 +47,11 @@ export function Testimonials() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="font-display text-[clamp(1.6rem,5vw,3.5rem)] text-chalk leading-tight"
             >
-              "{topReviews[quoteIndex].comment}"
+              "{quoteReviews[quoteIndex]?.comment}"
             </motion.p>
           </AnimatePresence>
           <div className="flex gap-2 mt-8">
-            {topReviews.map((_, i) => (
+            {quoteReviews.map((_, i) => (
               <button
                 key={i}
                 type="button"
@@ -61,14 +71,14 @@ export function Testimonials() {
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="max-h-[500px] overflow-y-auto pr-2 space-y-0"
         >
-          {reviews.slice(0, 6).map((review, i) => (
+          {cardReviews.map((review, i) => (
             <motion.div
               key={review.id}
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.15 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
             >
-              <ReviewCard review={review} />
+              <ReviewCard review={review} arenaName={review.arenaName} />
             </motion.div>
           ))}
         </motion.div>

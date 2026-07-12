@@ -173,6 +173,20 @@
     background-color: rgb(var(--color-day-inactive));
     color: rgb(var(--color-mist));
   }
+
+  .search-hover-circle {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgb(var(--color-lime));
+    z-index: 0;
+    display: block;
+    pointer-events: none;
+    transform: translate(50%, -50%);
+  }
 }
 
 @layer utilities {
@@ -257,8 +271,10 @@
 
 .arena-btn:hover,
 .arena-btn:focus-visible {
+  border-radius: 100px;
   filter: brightness(1.05);
   transition:
+    border-radius 1.2s cubic-bezier(0.25, 1, 0.5, 1),
     filter 0.4s ease,
     background-color 0.4s ease;
 }
@@ -305,6 +321,19 @@
 
 .arena-btn--attached-r {
   border-radius: 0 5px 5px 0;
+  transform: scale(1);
+  transition:
+    border-radius 1.2s cubic-bezier(0.25, 1, 0.5, 1),
+    filter 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arena-btn--attached-r:hover,
+.arena-btn--attached-r:focus-visible {
+  border-radius: 0 9999px 9999px 0;
+  filter: brightness(1.05);
+  transform: scale(1.03);
 }
 
 
@@ -317,8 +346,10 @@
 
 .group:hover .arena-btn--in-group,
 .group:focus-visible .arena-btn--in-group {
+  border-radius: 100px;
   filter: brightness(1.05);
   transition:
+    border-radius 1.2s cubic-bezier(0.25, 1, 0.5, 1),
     filter 0.4s ease;
 }
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MapPin, Star } from 'lucide-react'
+import { MapPin, Star, Heart } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Arena } from '../../types'
 import { SportTag } from './SportTag'
@@ -7,6 +7,7 @@ import { OccupancyBar } from './OccupancyBar'
 import { BtnLink, BtnMorphLabel } from './Btn'
 import { formatPKR } from '../../utils/formatters'
 import { cn } from '../../utils/formatters'
+import { useState } from 'react'
 
 interface ArenaCardProps {
   arena: Arena
@@ -20,7 +21,7 @@ function TrendingArenaCard({ arena, className }: { arena: Arena; className?: str
       to={`/arenas/${arena.slug}`}
       className={cn(
         'flex-shrink-0 w-[280px] sm:w-[350px] h-[200px] relative rounded-sm overflow-hidden group',
-        'hover:-translate-y-1 transition-transform duration-200 hover:shadow-[0_8px_24px_rgba(200,255,0,0.08)]',
+        'hover:-translate-y-1 transition-transform duration-200',
         className
       )}
     >
@@ -46,6 +47,13 @@ function TrendingArenaCard({ arena, className }: { arena: Arena; className?: str
 }
 
 export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardProps) {
+  const [isFavorited, setIsFavorited] = useState(false)
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsFavorited(!isFavorited)
+  }
+
   if (variant === 'trending') {
     return (
       <TrendingArenaCard arena={arena} className={className} />
@@ -112,7 +120,7 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
     <motion.article
       className={cn(
         'flex flex-col bg-slate rounded-sm overflow-hidden group',
-        'hover:-translate-y-1 transition-all duration-200 hover:shadow-[0_8px_24px_rgba(200,255,0,0.08)]',
+        'hover:-translate-y-1 transition-all duration-200',
         className
       )}
     >
@@ -121,8 +129,17 @@ export function ArenaCard({ arena, variant = 'listing', className }: ArenaCardPr
         <div className="absolute top-3 left-3">
           <SportTag sport={arena.sport} />
         </div>
+        <button
+          onClick={handleFavorite}
+          className="absolute top-3 right-3 w-8 h-8 bg-ground/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-ground transition-colors"
+        >
+          <Heart 
+            size={16} 
+            className={isFavorited ? 'text-lime fill-lime' : 'text-chalk'} 
+          />
+        </button>
         {arena.isPopular && (
-          <span className="absolute top-3 right-3 bg-amber text-ground font-display text-xs px-2 py-1 tracking-wide">
+          <span className="absolute top-14 right-3 bg-amber text-ground font-display text-xs px-2 py-1 tracking-wide">
             TRENDING
           </span>
         )}

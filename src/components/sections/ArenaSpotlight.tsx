@@ -1,20 +1,20 @@
 import useEmblaCarousel from 'embla-carousel-react'
 import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { arenas } from '../../data/arenas'
 import { ArenaCard } from '../ui/ArenaCard'
 import { useScrollReveal } from '../../hooks/useScrollReveal'
-
-const featured = arenas.filter((a) => a.isFeatured)
+import { fetchArenas } from '../../services/supabaseData'
+import type { Arena } from '../../types'
 
 export function ArenaSpotlight() {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: 'center',
-    loop: true,
-    skipSnaps: false,
-  })
+  const [featured, setFeatured] = useState<Arena[]>([])
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', loop: true, skipSnaps: false })
   const [selected, setSelected] = useState(0)
   const { ref, inView } = useScrollReveal(0.1)
+
+  useEffect(() => {
+    fetchArenas().then((data) => setFeatured(data.filter((a) => a.isFeatured)))
+  }, [])
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
@@ -24,14 +24,14 @@ export function ArenaSpotlight() {
     const onSelect = () => setSelected(emblaApi.selectedScrollSnap())
     emblaApi.on('select', onSelect)
     onSelect()
-    return () => {
-      emblaApi.off('select', onSelect)
-    }
+    return () => { emblaApi.off('select', onSelect) }
   }, [emblaApi])
+
+  if (featured.length === 0) return null
 
   const total = featured.length
   const thumbWidth = 100 / total
-  const thumbOffset = (selected / (total - 1)) * (100 - thumbWidth)
+  const thumbOffset = total > 1 ? (selected / (total - 1)) * (100 - thumbWidth) : 0
 
   return (
     <section className="bg-turf noise-overlay py-20 overflow-hidden">
@@ -67,10 +67,7 @@ export function ArenaSpotlight() {
               <div
                 key={arena.id}
                 className="flex-[0_0_85%] md:flex-[0_0_380px] min-w-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex"
-                style={{
-                  transform: i === selected ? 'scale(1)' : 'scale(0.93)',
-                  opacity: i === selected ? 1 : 0.6,
-                }}
+                style={{ transform: i === selected ? 'scale(1)' : 'scale(0.93)', opacity: i === selected ? 1 : 0.6 }}
               >
                 <ArenaCard arena={arena} variant="carousel" className="w-full" />
               </div>
@@ -78,8 +75,6 @@ export function ArenaSpotlight() {
           </div>
         </div>
       </div>
-
-      {/* Scrollbar */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 mt-8">
         <div
           className="relative h-[3px] bg-chalk/15 rounded-full overflow-hidden cursor-pointer"

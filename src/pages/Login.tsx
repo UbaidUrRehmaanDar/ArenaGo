@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { Btn } from '../components/ui/Btn'
+import { Btn, BtnLink } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { AuthSidebar } from '../components/layout/AuthSidebar'
 
 export function Login() {
-  const { login, user } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,19 +19,34 @@ export function Login() {
     setTimeout(() => setIsErrorRed(false), 2000)
   }
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const ok = await login(email, password)
-    if (ok) {
-      // Navigate based on actual user role from database
-      // Use a small delay to ensure user state is updated
-      setTimeout(() => {
-        if (user?.role === 'owner') {
-          navigate('/dashboard/owner')
-        } else {
-          navigate('/home')
-        }
-      }, 100)
+
+    if (!email || !password) {
+      setError('Please fill in all fields.')
+      triggerErrorAnimation()
+      return
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      triggerErrorAnimation()
+      return
+    }
+
+    const result = await login(email, password)
+    if (result.success && result.user) {
+      // Navigate based on returned user data (no race condition)
+      if (result.user.role === 'owner') {
+        navigate('/dashboard/owner')
+      } else {
+        navigate('/home')
+      }
     } else {
       setError('Invalid email or password.')
       triggerErrorAnimation()
@@ -93,17 +108,11 @@ export function Login() {
           </form>
           
           <div className="mt-6 flex justify-between items-center text-sm">
-            <p className="text-mist hover:text-chalk cursor-pointer font-body">
-              Forgot password?
-            </p>
             <div className="flex gap-2 text-mist font-body">
               <span>Don't have an account?</span>
-              <button
-                onClick={() => navigate('/signup')}
-                className="text-lime hover:underline"
-              >
+              <BtnLink to="/signup" variant="outline" className="text-[14px] py-1 px-3">
                 Sign up
-              </button>
+              </BtnLink>
             </div>
           </div>
 

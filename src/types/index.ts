@@ -112,6 +112,7 @@ export interface Review {
   comment: string
   date: string
   sport: SportType
+  arenaName?: string
 }
 
 export interface ProfileRecord {
@@ -122,6 +123,7 @@ export interface ProfileRecord {
   phone?: string
   role: UserRole
   cityId?: string
+  cityName?: string
 }
 
 export interface FavoriteRecord {
@@ -229,3 +231,65 @@ export interface AuthUser {
   avatar?: string
   arenaIds?: string[]
 }
+
+// Community types
+export type PostType = 'general' | 'announcement' | 'tournament'
+
+export interface CommunityPost {
+  id: string
+  authorId: string
+  authorName: string
+  authorAvatar?: string
+  authorRole: UserRole
+  caption: string
+  postType: PostType
+  images: string[]
+  createdAt: string
+  updatedAt: string
+  likeCount: number
+  commentCount: number
+  isDeleted: boolean
+  isLikedByCurrentUser?: boolean
+}
+
+export interface PostImage {
+  id: string
+  postId: string
+  imageUrl: string
+  altText?: string
+  sortOrder: number
+  createdAt: string
+}
+
+export interface CommunityComment {
+  id: string
+  postId: string
+  authorId: string
+  authorName: string
+  authorAvatar?: string
+  authorRole: UserRole
+  content: string
+  createdAt: string
+  updatedAt: string
+  isDeleted: boolean
+}
+
+export interface CommunityLike {
+  id: string
+  postId: string
+  userId: string
+  createdAt: string
+}
+
+export type ReportStatus = 'pending' | 'reviewed' | 'resolved' | 'dismissed'
+
+export interface CommunityReport {
+  id: string
+  postId: string
+  reporterId: string
+  reason: string
+  status: ReportStatus
+  createdAt: string
+}
+
+export type CommunityFilter = 'latest' | 'popular' | 'players' | 'arenas' | 'tournaments'

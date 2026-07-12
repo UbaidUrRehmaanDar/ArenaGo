@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+
+# Environment files — contain secrets, never commit
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Kiro/Claude IDE settings
+.claude/
+
+# Scratch/dev scripts
+scratch_*.js
+scratch_*.cjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

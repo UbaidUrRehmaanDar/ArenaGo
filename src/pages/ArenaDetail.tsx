@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { addDays, format, parseISO } from 'date-fns'
 import {
   Car,
@@ -19,18 +19,19 @@ import { AnimatePresence } from 'framer-motion'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
-import { ownerAnalytics } from '../data/analytics'
-import { fetchArenaBySlug, fetchReviewsForArena, fetchSlotsForArenaDate } from '../services/supabaseData'
+import { fetchArenaBySlug, fetchReviewsForArena, fetchSlotsForArenaDate, fetchArenaHourlyData, isFavorited, addFavorite, removeFavorite } from '../services/supabaseData'
 import { SportTag } from '../components/ui/SportTag'
 import { SlotGrid } from '../components/ui/SlotGrid'
 import { PeakHoursChart } from '../components/ui/PeakHoursChart'
 import { ReviewCard } from '../components/ui/ReviewCard'
 import { BookingSteps } from '../components/ui/BookingSteps'
 import { Btn, BtnLink } from '../components/ui/Btn'
+import { LoadingState } from '../components/ui/LoadingSpinner'
 import { useBooking } from '../context/BookingContext'
+import { useAuth } from '../context/AuthContext'
 import { formatPKR, formatTime } from '../utils/formatters'
 import { cn } from '../utils/formatters'
-import type { Slot } from '../types'
+import type { HourlyData, Slot } from '../types'
 
 const amenityIcons: Record<string, typeof Car> = {
   'Changing Rooms': Users,
@@ -59,15 +60,20 @@ export function ArenaDetail() {
   const [arena, setArena] = useState<any>(null)
   const [reviews, setReviews] = useState<any[]>([])
   const [daySlots, setDaySlots] = useState<Slot[]>([])
+  const [peakHours, setPeakHours] = useState<HourlyData[]>([])
   const [loading, setLoading] = useState(true)
+
+  const { user } = useAuth()
+  const { selectSlot, slots: selectedSlots, step, setStep } = useBooking()
 
   const [heroImage, setHeroImage] = useState(0)
   const [favourite, setFavourite] = useState(false)
+  const [favLoading, setFavLoading] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [showAllReviews, setShowAllReviews] = useState(false)
   const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i))
   const [selectedDay, setSelectedDay] = useState(0)
   const selectedDate = format(days[selectedDay], 'yyyy-MM-dd')
-  const { selectSlot, slots: selectedSlots, step, setStep } = useBooking()
 
   useEffect(() => {
     async function loadArena() {
@@ -76,8 +82,17 @@ export function ArenaDetail() {
       const data = await fetchArenaBySlug(slug)
       if (data) {
         setArena(data)
-        const arenaReviews = await fetchReviewsForArena(data.id)
+        const [arenaReviews, hourlyData] = await Promise.all([
+          fetchReviewsForArena(data.id),
+          fetchArenaHourlyData(data.id),
+        ])
         setReviews(arenaReviews)
+        setPeakHours(hourlyData)
+        // Load favourite state for logged-in users
+        if (user?.id) {
+          const faved = await isFavorited(user.id, data.id)
+          setFavourite(faved)
+        }
       }
       setLoading(false)
     }
@@ -93,25 +108,29 @@ export function ArenaDetail() {
     loadSlots()
   }, [arena, selectedDate])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-mist">Loading arena...</p>
-      </div>
-    )
-  }
+  if (loading) return <LoadingState message="Loading arena..." />
 
-  if (!arena) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-mist">Arena not found</p>
-      </div>
-    )
-  }
+  if (!arena) return <LoadingState message="Arena not found" />
 
-  const analytics = ownerAnalytics.find((a) => a.arenaId === arena.id) ?? ownerAnalytics[0]
   const selectedTotal = selectedSlots.reduce((sum, currentSlot) => sum + currentSlot.price, 0)
 
+  const handleToggleFavourite = async () => {
+    if (!user) {
+      console.warn('Not logged in — cannot save favourite')
+      return
+    }
+    console.log('Toggle fav — user:', user.id, 'arena:', arena.id, 'current:', favourite)
+    if (favLoading) return
+    setFavLoading(true)
+    if (favourite) {
+      const ok = await removeFavorite(user.id, arena.id)
+      if (ok) setFavourite(false)
+    } else {
+      const ok = await addFavorite(user.id, arena.id)
+      if (ok) setFavourite(true)
+    }
+    setFavLoading(false)
+  }
   const handleSlotSelect = (s: Slot) => {
     if (s.status !== 'available') return
     const nextSlots = selectSlot(arena.id, arena.name, s)
@@ -143,17 +162,23 @@ export function ArenaDetail() {
               alt={arena.name}
               className="w-full h-full object-cover"
             />
-            <p className="absolute top-4 left-4 font-mono text-xs text-mist bg-ground/60 px-3 py-1 rounded-sm">
-              Arenas &gt; {arena.sport} &gt; {arena.name}
-            </p>
+            <nav className="absolute top-4 left-4 flex items-center gap-1 font-mono text-xs text-mist bg-ground/60 px-3 py-1 rounded-sm" aria-label="Breadcrumb">
+              <Link to="/arenas" className="hover:text-chalk transition-colors">Arenas</Link>
+              <span className="mx-1 opacity-40">&gt;</span>
+              <Link to={`/arenas?sport=${arena.sport}`} className="hover:text-chalk transition-colors">{arena.sport}</Link>
+              <span className="mx-1 opacity-40">&gt;</span>
+              <span className="text-chalk">{arena.name}</span>
+            </nav>
             <div className="absolute top-4 right-4 flex gap-2">
               <button type="button" className="p-2 bg-ground/60 rounded-sm text-chalk">
                 <Share2 size={18} />
               </button>
               <button
                 type="button"
-                onClick={() => setFavourite(!favourite)}
-                className="p-2 bg-ground/60 rounded-sm"
+                onClick={handleToggleFavourite}
+                disabled={favLoading || !user}
+                className={`p-2 bg-ground/60 rounded-sm transition-opacity ${favLoading ? 'opacity-50' : ''} ${!user ? 'cursor-default' : ''}`}
+                title={!user ? 'Sign in to save' : favourite ? 'Remove from favourites' : 'Save to favourites'}
               >
                 <Heart
                   size={18}
@@ -286,19 +311,22 @@ export function ArenaDetail() {
                 })}
               </div>
 
-              <PeakHoursChart data={analytics.peakHours} />
+              <PeakHoursChart data={peakHours} />
 
               <div className="mt-12">
                 <h3 className="font-display text-2xl text-chalk mb-6">PLAYER REVIEWS</h3>
-                {reviews.slice(0, 5).map((r) => (
+                {(showAllReviews ? reviews : reviews.slice(0, 5)).map((r) => (
                   <ReviewCard key={r.id} review={r} />
                 ))}
-                <button
-                  type="button"
-                  className="text-mist text-[13px] font-body mt-4 hover:text-chalk"
-                >
-                  Load more
-                </button>
+                {reviews.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllReviews((prev) => !prev)}
+                    className="text-mist text-[13px] font-body mt-4 hover:text-chalk transition-colors"
+                  >
+                    {showAllReviews ? 'Show fewer' : `Load more (${reviews.length - 5} remaining)`}
+                  </button>
+                )}
               </div>
             </div>
 

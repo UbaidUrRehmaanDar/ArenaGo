@@ -67,29 +67,19 @@
   overflow: hidden;
 }
 
-.pill .hover-circle {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  border-radius: 50%;
-  background: var(--base);
-  z-index: 1;
-  display: block;
-  pointer-events: none;
-  will-change: transform;
-}
-
-.pill .label-stack {
-  position: relative;
-  display: inline-block;
-  line-height: 1;
-  z-index: 2;
+/* Icon adjustments for pills */
+.pill .icon-container {
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
 }
 
 .pill .pill-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   position: relative;
   z-index: 2;
-  display: inline-block;
   line-height: 1;
   will-change: transform;
 }
@@ -102,6 +92,27 @@
   z-index: 3;
   display: inline-block;
   will-change: transform, opacity;
+}
+
+/* ── hover-circle (background animation) ──────────────────────────────── */
+.pill .hover-circle {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  border-radius: 50%;
+  background: var(--base);
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ── label stack (text + hover effect) ───────────────────────────────── */
+.pill .label-stack {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  z-index: 2;
 }
 
 /* active indicator dot */

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { Btn } from '../components/ui/Btn'
+import { Btn, BtnLink } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { cn } from '../utils/formatters'
@@ -22,11 +22,37 @@ export function Signup() {
     setError('')
   }
 
+  const triggerErrorAnimation = () => {
+    setIsErrorRed(true)
+    setTimeout(() => setIsErrorRed(false), 2000)
+  }
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const isValidPassword = (password: string) => {
+    return password.length >= 6
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!name || !email || !password) {
       setError('Please fill in all fields.')
+      triggerErrorAnimation()
+      return
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      triggerErrorAnimation()
+      return
+    }
+
+    if (!isValidPassword(password)) {
+      setError('Password must be at least 6 characters.')
       triggerErrorAnimation()
       return
     }
@@ -39,11 +65,6 @@ export function Signup() {
       setError(signupError || 'Unknown error occurred.')
       triggerErrorAnimation()
     }
-  }
-
-  const triggerErrorAnimation = () => {
-    setIsErrorRed(true)
-    setTimeout(() => setIsErrorRed(false), 2000)
   }
 
   return (
@@ -129,12 +150,9 @@ export function Signup() {
           
           <div className="mt-6 flex justify-between items-center text-sm">
             <span className="text-mist">Already have an account?</span>
-            <button
-              onClick={() => navigate('/login')}
-              className="text-lime hover:underline font-body"
-            >
+            <BtnLink to="/login" variant="outline" className="text-[14px] py-1 px-3">
               Log in
-            </button>
+            </BtnLink>
           </div>
 
         </div>

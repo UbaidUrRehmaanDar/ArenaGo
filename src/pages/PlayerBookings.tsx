@@ -8,6 +8,7 @@ import { PageWrapper } from '../components/layout/PageWrapper'
 import { BtnLink, Btn } from '../components/ui/Btn'
 import { StatCard } from '../components/ui/StatCard'
 import { SportTag } from '../components/ui/SportTag'
+import { LoadingState } from '../components/ui/LoadingSpinner'
 import { useAuth } from '../context/AuthContext'
 import { cancelSupabaseBooking, fetchArenas, fetchPlayerBookings } from '../services/supabaseData'
 import type { Arena, Booking, SportType } from '../types'
@@ -28,8 +29,8 @@ export function PlayerBookings() {
   const loadData = async () => {
     if (!user) return
     setLoading(true)
-    const [bookingData, arenaData] = await Promise.all([
-      fetchPlayerBookings(user.id),
+    const [{ bookings: bookingData }, arenaData] = await Promise.all([
+      fetchPlayerBookings(user.id, 1, 50),
       fetchArenas(),
     ])
     setBookings(bookingData)
@@ -75,19 +76,10 @@ export function PlayerBookings() {
   }
 
   if (!user) return <Navigate to="/login" replace />
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-ground flex items-center justify-center text-mist">
-        Loading your bookings...
-      </div>
-    )
-  }
+  if (loading) return <LoadingState message="Loading your bookings..." />
 
-  return (
-    <>
-      <Navbar />
-      <PageWrapper className="pt-20 md:pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
+  const content = (
+    <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
           <section className="rounded-[28px] border border-line bg-gradient-to-br from-turf via-slate/70 to-ground p-5 md:p-8 noise-overlay overflow-hidden">
             <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-6 items-end">
               <div className="space-y-4">
@@ -217,6 +209,13 @@ export function PlayerBookings() {
             </div>
           </section>
         </div>
+  )
+
+  return (
+    <>
+      <Navbar />
+      <PageWrapper className="pt-20 md:pt-24 pb-20 md:pb-16">
+        {content}
       </PageWrapper>
       <Footer />
     </>

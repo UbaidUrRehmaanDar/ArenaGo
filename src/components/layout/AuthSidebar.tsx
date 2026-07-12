@@ -1,19 +1,27 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArenaGoLogo } from '../ui/ArenaGoLogo'
 import { CountUp } from '../ui/CountUp'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { fetchPlatformStats } from '../../services/supabaseData'
 
 interface AuthSidebarProps {
   copy: string
 }
 
-const stats = [
-  { value: 2400, suffix: '+', label: 'Players' },
-  { value: 38, suffix: '', label: 'Arenas' },
-  { value: 12000, suffix: '+', label: 'Bookings' },
-]
-
 export function AuthSidebar({ copy }: AuthSidebarProps) {
+  const [stats, setStats] = useState({ players: 0, arenas: 0, bookings: 0 })
+
+  useEffect(() => {
+    fetchPlatformStats().then(setStats)
+  }, [])
+
+  const displayStats = [
+    { value: stats.players, suffix: '+', label: 'Players' },
+    { value: stats.arenas, suffix: '', label: 'Arenas' },
+    { value: stats.bookings, suffix: '+', label: 'Bookings' },
+  ]
+
   return (
     <div className="relative hidden md:flex flex-col justify-between p-12 overflow-hidden">
       <img
@@ -35,7 +43,7 @@ export function AuthSidebar({ copy }: AuthSidebarProps) {
       </div>
 
       <div className="relative z-10 flex gap-10 flex-wrap">
-        {stats.map((stat) => (
+        {displayStats.map((stat) => (
           <div key={stat.label}>
             <p className="font-display text-3xl text-lime">
               <CountUp end={stat.value} duration={1.5} suffix={stat.suffix} />
