@@ -262,7 +262,7 @@ function OwnerOverview() {
           {[
             { to: '/dashboard/owner/bookings',  label: 'Bookings',      sub: 'Manage incoming', icon: CalendarCheck, color: 'lime' },
             { to: '/dashboard/owner/arenas',    label: 'Arenas',        sub: 'Edit venues',      icon: MapPin,        color: 'lime' },
-            { to: '/dashboard/owner/slots',     label: 'Slot Manager',  sub: 'Block / open',    icon: Clock,         color: 'amber' },
+            { to: '/dashboard/owner/slots',     label: 'Slot Manager',  sub: 'Block / open',    icon: Clock,         color: 'lime' },
             { to: '/dashboard/owner/campaigns', label: 'Campaigns',     sub: 'Run promos',       icon: Users,         color: 'lime' },
           ].map(({ to, label, sub, icon: Icon, color }) => (
             <Link key={to} to={to}
