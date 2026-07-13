@@ -26,26 +26,36 @@ export function OwnerBookings({ embedded = false }: { embedded?: boolean }) {
   const [activeTab, setActiveTab] = useState<BookingTab>('All')
 
   const loadData = async () => {
-    if (!user?.arenaIds?.length) return
+    if (!user) return
+    // Owner has no arenas yet — stop loading so the empty state can render
+    if (!user.arenaIds?.length) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
-    const [arenaData, bookingGroups] = await Promise.all([
-      fetchArenas(),
-      Promise.all(user.arenaIds.map((arenaId) => fetchArenaBookings(arenaId))),
-    ])
+    try {
+      const [arenaData, bookingGroups] = await Promise.all([
+        fetchArenas(),
+        Promise.all(user.arenaIds.map((arenaId) => fetchArenaBookings(arenaId))),
+      ])
 
-    const allBookings = bookingGroups.flat().sort((left, right) => {
-      const leftValue = new Date(`${left.date}T${left.startTime}`).getTime()
-      const rightValue = new Date(`${right.date}T${right.startTime}`).getTime()
-      return rightValue - leftValue
-    })
+      const allBookings = bookingGroups.flat().sort((left, right) => {
+        const leftValue = new Date(`${left.date}T${left.startTime}`).getTime()
+        const rightValue = new Date(`${right.date}T${right.startTime}`).getTime()
+        return rightValue - leftValue
+      })
 
-    const uniquePlayerIds = [...new Set(allBookings.map((booking) => booking.playerId))]
-    const playerProfiles = await Promise.all(uniquePlayerIds.map((id) => fetchProfileRecord(id)))
+      const uniquePlayerIds = [...new Set(allBookings.map((booking) => booking.playerId))]
+      const playerProfiles = await Promise.all(uniquePlayerIds.map((id) => fetchProfileRecord(id)))
 
-    setArenas(arenaData)
-    setBookings(allBookings)
-    setProfiles(playerProfiles.filter((profile): profile is ProfileRecord => Boolean(profile)))
-    setLoading(false)
+      setArenas(arenaData)
+      setBookings(allBookings)
+      setProfiles(playerProfiles.filter((profile): profile is ProfileRecord => Boolean(profile)))
+    } catch (err) {
+      console.error('Failed to load owner bookings:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -76,28 +86,32 @@ export function OwnerBookings({ embedded = false }: { embedded?: boolean }) {
   if (loading) return <LoadingState message="Loading bookings..." />
 
   if (!user.arenaIds?.length) {
+    const noArenaContent = (
+      <div className="max-w-4xl mx-auto px-4 md:px-8">
+        <section className="rounded-[28px] border border-line bg-turf p-6 md:p-8 text-center">
+          <ShieldCheck size={24} className="text-lime mx-auto mb-4" />
+          <h1 className="font-display text-display-md text-chalk">OWNER BOOKING CONTROL</h1>
+          <p className="mt-4 text-mist max-w-xl mx-auto text-sm md:text-base">
+            Once your owner profile is connected to one or more arenas, the live booking board, customer profiles, and daily queue will appear here.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <BtnLink to="/dashboard/owner/profile" className="px-5 py-3 text-sm">
+              Review Profile
+            </BtnLink>
+            <BtnLink to="/dashboard/owner/analytics" variant="outline" className="px-5 py-3 text-sm">
+              View Analytics
+            </BtnLink>
+          </div>
+        </section>
+      </div>
+    )
+
+    if (embedded) return noArenaContent
+
     return (
       <>
         <Navbar />
-        <PageWrapper className="pt-20 md:pt-24 pb-16">
-          <div className="max-w-4xl mx-auto px-4 md:px-8">
-            <section className="rounded-[28px] border border-line bg-turf p-6 md:p-8 text-center">
-              <ShieldCheck size={24} className="text-lime mx-auto mb-4" />
-              <h1 className="font-display text-display-md text-chalk">OWNER BOOKING CONTROL</h1>
-              <p className="mt-4 text-mist max-w-xl mx-auto text-sm md:text-base">
-                Once your owner profile is connected to one or more arenas, the live booking board, customer profiles, and daily queue will appear here.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <BtnLink to="/profile" className="px-5 py-3 text-sm">
-                  Review Profile
-                </BtnLink>
-                <BtnLink to="/dashboard/owner/analytics" variant="outline" className="px-5 py-3 text-sm">
-                  View Analytics
-                </BtnLink>
-              </div>
-            </section>
-          </div>
-        </PageWrapper>
+        <PageWrapper className="pt-20 md:pt-24 pb-16">{noArenaContent}</PageWrapper>
         <Footer />
       </>
     )

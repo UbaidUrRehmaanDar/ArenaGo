@@ -21,32 +21,30 @@ interface DashboardLayoutProps {
   links: { to: string; label: string }[]
 }
 
-/** Maps sidebar link labels to compact icons for the mobile bottom nav. */
 const LABEL_ICON: Record<string, typeof LayoutDashboard> = {
-  Overview:         LayoutDashboard,
-  'My Bookings':    CalendarCheck,
-  Bookings:         CalendarCheck,
+  Overview:           LayoutDashboard,
+  'My Bookings':      CalendarCheck,
+  Bookings:           CalendarCheck,
   'Favourite Arenas': Settings,
-  Activity:         BarChart2,
-  Profile:          User,
-  Arenas:           Layers,
-  Campaigns:        Megaphone,
-  Analytics:        BarChart2,
-  'Slot Manager':   Sliders,
+  Activity:           BarChart2,
+  Profile:            User,
+  Arenas:             Layers,
+  Campaigns:          Megaphone,
+  Analytics:          BarChart2,
+  'Slot Manager':     Sliders,
 }
 
-/** Short mobile labels so the bottom nav stays readable without truncation. */
 const MOBILE_LABEL: Record<string, string> = {
-  Overview:         'Overview',
-  'My Bookings':    'Bookings',
-  Bookings:         'Bookings',
+  Overview:           'Overview',
+  'My Bookings':      'Bookings',
+  Bookings:           'Bookings',
   'Favourite Arenas': 'Saved',
-  Activity:         'Activity',
-  Profile:          'Profile',
-  Arenas:           'Arenas',
-  Campaigns:        'Campaigns',
-  Analytics:        'Analytics',
-  'Slot Manager':   'Slots',
+  Activity:           'Activity',
+  Profile:            'Profile',
+  Arenas:             'Arenas',
+  Campaigns:          'Promos',
+  Analytics:          'Stats',
+  'Slot Manager':     'Slots',
 }
 
 export function DashboardLayout({ role, links }: DashboardLayoutProps) {
