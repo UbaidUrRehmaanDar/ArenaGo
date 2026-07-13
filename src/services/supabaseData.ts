@@ -8,6 +8,7 @@ import type {
   ProfileRecord,
   PromotionRecord,
   Review,
+  SlotStatus,
   TimeSlot,
 } from '../types'
 
@@ -18,12 +19,13 @@ import type {
  */
 export async function updateProfile(
   userId: string,
-  updates: { fullName?: string; phone?: string }
+  updates: { fullName?: string; phone?: string; cityId?: string | null }
 ): Promise<boolean> {
   try {
-    const payload: Record<string, string> = {}
+    const payload: Record<string, string | null> = {}
     if (updates.fullName !== undefined) payload.full_name = updates.fullName
     if (updates.phone !== undefined) payload.phone = updates.phone
+    if (updates.cityId !== undefined) payload.city_id = updates.cityId
 
     const { error } = await supabase
       .from('profiles')
@@ -251,6 +253,13 @@ export async function uploadArenaImage(
     const publicUrl = urlData?.publicUrl
     if (!publicUrl) return null
 
+    // Demote any existing primary image for this arena
+    await supabase
+      .from('arena_images')
+      .update({ is_primary: false })
+      .eq('arena_id', arenaId)
+      .eq('is_primary', true)
+
     // Insert as a new primary image row (sort_order 0, is_primary true)
     await supabase.from('arena_images').insert({
       arena_id: arenaId,
@@ -344,7 +353,7 @@ export async function fetchProfileRecord(userId: string): Promise<ProfileRecord 
       .from('profiles')
       .select('*, cities(name)')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error || !profile) return null
 
@@ -397,7 +406,7 @@ export async function fetchArenaBySlug(slug: string): Promise<Arena | undefined>
         arena_images (url, alt_text, sort_order, is_primary)
       `)
       .eq('slug', slug)
-      .single()
+      .maybeSingle()
 
     if (error || !data) return undefined
     return mapArenaRow(data)
@@ -417,13 +426,79 @@ export async function fetchArenaById(id: string): Promise<Arena | undefined> {
         arena_images (url, alt_text, sort_order, is_primary)
       `)
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
     if (error || !data) return undefined
     return mapArenaRow(data)
   } catch (err) {
     console.error(err)
     return undefined
+  }
+}
+
+export interface CreateArenaInput {
+  ownerId: string
+  name: string
+  area: string
+  address: string
+  cityId: string
+  weekdayPrice: number
+  weekendPrice: number
+  peakPrice: number
+  description: string
+  openTime: string
+  closeTime: string
+  latitude?: number
+  longitude?: number
+}
+
+/** Creates a new arena owned by the given profile and returns the mapped row. */
+export async function createArena(input: CreateArenaInput): Promise<{ arena: Arena | null; error?: string }> {
+  try {
+    const slugBase = input.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+    const slug = `${slugBase || 'arena'}-${Math.random().toString(36).slice(2, 7)}`
+
+    const { data, error } = await supabase
+      .from('arenas')
+      .insert({
+        owner_id: input.ownerId,
+        name: input.name,
+        slug,
+        area: input.area,
+        address: input.address,
+        city_id: input.cityId,
+        latitude: input.latitude ?? 0,
+        longitude: input.longitude ?? 0,
+        weekday_price: input.weekdayPrice,
+        weekend_price: input.weekendPrice,
+        peak_price: input.peakPrice,
+        open_time: input.openTime,
+        close_time: input.closeTime,
+        description: input.description,
+        is_popular: false,
+        is_featured: false,
+        total_bookings: 0,
+        average_rating: 0,
+        review_count: 0,
+      })
+      .select(`
+        *,
+        cities (name),
+        arena_images (url, alt_text, sort_order, is_primary)
+      `)
+      .single()
+
+    if (error) {
+      console.error('createArena error:', error)
+      return { arena: null, error: error.message }
+    }
+    return { arena: mapArenaRow(data) }
+  } catch (err: any) {
+    console.error('createArena error:', err)
+    return { arena: null, error: err?.message ?? 'Unknown error' }
   }
 }
 
@@ -622,8 +697,8 @@ export async function fetchAverageRating(arenaId: string): Promise<{ rating: num
 
 export async function fetchSlotsForArenaDate(arenaId: string, dateStr: string): Promise<TimeSlot[]> {
   try {
-    // Fetch slots and existing confirmed bookings for this arena+date in parallel
-    const [slotsResult, bookingsResult] = await Promise.all([
+    // Fetch slots, existing confirmed bookings, and owner-blocked slots for this arena+date in parallel
+    const [slotsResult, bookingsResult, blockedResult] = await Promise.all([
       supabase
         .from('time_slots')
         .select('*, courts!inner(arena_id, sport_id)')
@@ -635,6 +710,10 @@ export async function fetchSlotsForArenaDate(arenaId: string, dateStr: string): 
         .eq('arena_id', arenaId)
         .eq('date', dateStr)
         .eq('status', 'confirmed'),
+      supabase
+        .from('blocked_slots')
+        .select('slot_key')
+        .eq('arena_id', arenaId),
     ])
 
     if (slotsResult.error || !slotsResult.data) return []
@@ -645,9 +724,16 @@ export async function fetchSlotsForArenaDate(arenaId: string, dateStr: string): 
       (bookingsResult.data ?? []).map((b: any) => b.time_slot_id).filter(Boolean)
     )
 
+    // Slots the owner has explicitly blocked via the Slot Manager
+    const blockedSlotIds = new Set(
+      (blockedResult.data ?? []).map((b: any) => b.slot_key).filter(Boolean)
+    )
+
     return slotsResult.data.map((row: any) => {
       // A slot is booked if the bookings table says so OR the time_slots row itself says so
       const isBooked = bookedSlotIds.has(row.id) || row.status === 'booked'
+      // A slot is unavailable if the owner blocked it
+      const isBlocked = blockedSlotIds.has(row.id) || row.status === 'unavailable'
 
       return {
         id: row.id,
@@ -658,7 +744,7 @@ export async function fetchSlotsForArenaDate(arenaId: string, dateStr: string): 
         startTime: row.start_time.substring(0, 5),
         endTime: row.end_time.substring(0, 5),
         price: row.price,
-        status: (isBooked ? 'booked' : row.status) as 'available' | 'booked' | 'unavailable',
+        status: (isBooked ? 'booked' : isBlocked ? 'unavailable' : 'available') as 'available' | 'booked' | 'unavailable',
         isPeak: Boolean(row.is_peak),
       }
     })
@@ -854,7 +940,7 @@ export async function fetchOwnerRecord(profileId: string): Promise<OwnerRecord |
       .from('owners')
       .select('*')
       .eq('profile_id', profileId)
-      .single()
+      .maybeSingle()
 
     if (error || !data) return null
 
@@ -869,6 +955,51 @@ export async function fetchOwnerRecord(profileId: string): Promise<OwnerRecord |
     }
   } catch (err) {
     console.error(err)
+    return null
+  }
+}
+
+/**
+ * Creates or updates the owner's business record (keyed by profile_id).
+ * Returns the saved record or null on failure.
+ */
+export async function upsertOwnerRecord(
+  profileId: string,
+  data: { businessName: string; businessEmail?: string; businessPhone?: string; cnic?: string }
+): Promise<OwnerRecord | null> {
+  try {
+    const { data: result, error } = await supabase
+      .from('owners')
+      .upsert(
+        {
+          profile_id: profileId,
+          business_name: data.businessName,
+          business_email: data.businessEmail || null,
+          business_phone: data.businessPhone || null,
+          cnic: data.cnic || null,
+          status: 'pending',
+        },
+        { onConflict: 'profile_id' }
+      )
+      .select()
+      .single()
+
+    if (error) {
+      console.error('upsertOwnerRecord error:', error)
+      return null
+    }
+
+    return {
+      id: result.id,
+      profileId: result.profile_id,
+      businessName: result.business_name,
+      businessPhone: result.business_phone,
+      businessEmail: result.business_email,
+      cnic: result.cnic,
+      status: result.status,
+    }
+  } catch (err) {
+    console.error('upsertOwnerRecord error:', err)
     return null
   }
 }
@@ -940,6 +1071,12 @@ export async function setBlockedSlot(arenaId: string, slotKey: string, blocked: 
         console.error('Error blocking slot:', error)
         return false
       }
+      // Reflect the block on the actual time slot row (only if still open)
+      await supabase
+        .from('time_slots')
+        .update({ status: 'unavailable' })
+        .eq('id', slotKey)
+        .eq('status', 'available')
     } else {
       const { error } = await supabase
         .from('blocked_slots')
@@ -950,11 +1087,54 @@ export async function setBlockedSlot(arenaId: string, slotKey: string, blocked: 
         console.error('Error unblocking slot:', error)
         return false
       }
+      // Restore the time slot only if it was blocked (not booked)
+      await supabase
+        .from('time_slots')
+        .update({ status: 'available' })
+        .eq('id', slotKey)
+        .eq('status', 'unavailable')
     }
     return true
   } catch (err) {
     console.error('Unexpected error setting blocked slot:', err)
     return false
+  }
+}
+
+/**
+ * Fetches real time slots for an arena across an inclusive date range.
+ * Used by the owner Slot Manager so availability reflects actual data.
+ */
+export async function fetchTimeSlotsForArenaRange(
+  arenaId: string,
+  startDate: string,
+  endDate: string
+): Promise<TimeSlot[]> {
+  try {
+    const { data, error } = await supabase
+      .from('time_slots')
+      .select('id, arena_id, court_id, sport_id, date, start_time, end_time, price, is_peak, status')
+      .eq('arena_id', arenaId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+
+    if (error || !data) return []
+
+    return (data as any[]).map((row) => ({
+      id: row.id,
+      arenaId: row.arena_id,
+      courtId: row.court_id,
+      sportId: row.sport_id,
+      date: row.date,
+      startTime: String(row.start_time).substring(0, 5),
+      endTime: String(row.end_time).substring(0, 5),
+      price: Number(row.price) || 0,
+      status: (row.status as SlotStatus) ?? 'available',
+      isPeak: Boolean(row.is_peak),
+    }))
+  } catch (err) {
+    console.error('fetchTimeSlotsForArenaRange error:', err)
+    return []
   }
 }
 
@@ -975,7 +1155,7 @@ export async function fetchOwnerAnalytics(arenaIds: string[]) {
       .from('bookings')
       .select('*')
       .in('arena_id', arenaIds)
-      .eq('status', 'completed')
+      .neq('status', 'cancelled')
 
     if (error) {
       console.error('Error fetching analytics:', error)
@@ -999,7 +1179,7 @@ export async function fetchOwnerAnalytics(arenaIds: string[]) {
     }
 
     const totalBookings = bookings.length
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.total_price || 0), 0)
+    const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.amount) || 0), 0)
 
     // Calculate popular sports
     const sportCounts: Record<string, number> = {}
@@ -1016,16 +1196,29 @@ export async function fetchOwnerAnalytics(arenaIds: string[]) {
     const monthlyRevenue: Record<string, number> = {}
     bookings.forEach((b) => {
       const month = b.date?.substring(0, 7) || new Date().toISOString().substring(0, 7)
-      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (b.total_price || 0)
+      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (Number(b.amount) || 0)
     })
     const monthlyRevenueArray = Object.entries(monthlyRevenue)
       .map(([month, revenue]) => ({ month, revenue }))
       .sort((a, b) => a.month.localeCompare(b.month))
 
+    // Real occupancy = distinct booked slots / total available slots for these arenas
+    let averageOccupancy = 0
+    const { count: totalSlots } = await supabase
+      .from('time_slots')
+      .select('id', { count: 'exact', head: true })
+      .in('arena_id', arenaIds)
+    if (totalSlots && totalSlots > 0) {
+      const bookedSlots = new Set(
+        bookings.map((b) => b.slot_id).filter((id): id is string => Boolean(id))
+      )
+      averageOccupancy = Math.min(1, bookedSlots.size / totalSlots)
+    }
+
     return {
       totalBookings,
       totalRevenue,
-      averageOccupancy: totalBookings > 0 ? 0.65 : 0, // Simplified calculation
+      averageOccupancy,
       popularSports,
       monthlyRevenue: monthlyRevenueArray,
     }

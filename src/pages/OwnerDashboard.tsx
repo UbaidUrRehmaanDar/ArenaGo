@@ -20,6 +20,7 @@ import { LoadingState } from '../components/ui/LoadingSpinner'
 import { Btn, BtnLink } from '../components/ui/Btn'
 import { SportTag } from '../components/ui/SportTag'
 import { OccupancyBar } from '../components/ui/OccupancyBar'
+import { CustomDropdown } from '../components/ui/CustomDropdown'
 import { useAuth } from '../context/AuthContext'
 import {
   fetchArenaById, uploadArenaImage, fetchBlockedSlots, setBlockedSlot,
@@ -303,7 +304,13 @@ function OwnerArenas() {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [showAdd, setShowAdd] = useState(false)
   const [cities, setCities] = useState<{ id: string; name: string }[]>([])
-  const [form, setForm] = useState({ name: '', area: '', address: '', cityId: '', weekdayPrice: 1500, weekendPrice: 2000, peakPrice: 2500, description: '' })
+  const [form, setForm] = useState({
+    name: '', area: '', address: '', cityId: '',
+    weekdayPrice: 1500, weekendPrice: 2000, peakPrice: 2500, description: '',
+  })
+  const [newImages, setNewImages] = useState<File[]>([])
+  const [newPreviews, setNewPreviews] = useState<string[]>([])
+  const newImageInputRef = useRef<HTMLInputElement>(null)
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState('')
 
@@ -328,10 +335,32 @@ function OwnerArenas() {
     e.preventDefault(); if (!user) return
     if (!form.name.trim() || !form.area.trim() || !form.cityId) { setAddError('Name, area, and city are required.'); return }
     setAddError(''); setAdding(true)
-    const created = await createArena({ ownerId: user.id, name: form.name.trim(), area: form.area.trim(), address: form.address.trim() || form.area.trim(), cityId: form.cityId, weekdayPrice: Number(form.weekdayPrice), weekendPrice: Number(form.weekendPrice), peakPrice: Number(form.peakPrice), description: form.description.trim(), openTime: '06:00', closeTime: '23:00' })
+    const { arena: created, error: createError } = await createArena({
+      ownerId: user.id, name: form.name.trim(), area: form.area.trim(),
+      address: form.address.trim() || form.area.trim(), cityId: form.cityId,
+      weekdayPrice: Number(form.weekdayPrice), weekendPrice: Number(form.weekendPrice),
+      peakPrice: Number(form.peakPrice), description: form.description.trim(),
+      openTime: '06:00', closeTime: '23:00',
+    })
+    if (!created) {
+      setAdding(false)
+      setAddError(createError ?? 'Could not create arena. Please try again.')
+      return
+    }
+    for (const file of newImages) { await uploadArenaImage(created.id, file) }
     setAdding(false)
-    if (created) { setArenas((p) => [...p, created]); setShowAdd(false); setForm({ name: '', area: '', address: '', cityId: '', weekdayPrice: 1500, weekendPrice: 2000, peakPrice: 2500, description: '' }); await refreshUser() }
-    else setAddError('Could not create arena. Please try again.')
+    setArenas((p) => [...p, created])
+    newPreviews.forEach(URL.revokeObjectURL)
+    setForm({ name: '', area: '', address: '', cityId: '', weekdayPrice: 1500, weekendPrice: 2000, peakPrice: 2500, description: '' })
+    setNewImages([]); setNewPreviews([]); setAddError(''); setShowAdd(false)
+    await refreshUser()
+  }
+
+  const cityNames = cities.map((c) => c.name)
+  const selectedCityName = cities.find((c) => c.id === form.cityId)?.name ?? ''
+  const handleCityChange = (name: string) => {
+    const found = cities.find((c) => c.name === name)
+    setForm((f) => ({ ...f, cityId: found?.id ?? '' }))
   }
 
   if (loading) return <LoadingState message="Loading arenas..." />
@@ -400,45 +429,51 @@ function OwnerArenas() {
         </div>
       )}
 
-      {/* Add Arena Modal */}
+      {/* ── Add Arena Modal ──────────────────────────────────────────── */}
       {showAdd && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-turf border border-line rounded-2xl w-full max-w-md max-h-[90dvh] overflow-y-auto shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-              <h3 className="font-display text-xl text-chalk tracking-wide">Add Arena</h3>
-              <button type="button" onClick={() => setShowAdd(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-mist hover:text-chalk hover:bg-slate transition-colors"><X size={16} /></button>
+          <div className="bg-turf border border-line rounded-2xl w-full max-w-lg max-h-[90dvh] flex flex-col shadow-[0_16px_48px_rgba(0,0,0,0.55)]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
+              <div>
+                <p className="font-mono text-[10px] text-lime uppercase tracking-[0.2em]">Dashboard</p>
+                <h3 className="font-display text-xl text-chalk">Add New Arena</h3>
+              </div>
+              <button type="button" onClick={() => { newPreviews.forEach(URL.revokeObjectURL); setNewImages([]); setNewPreviews([]); setAddError(''); setShowAdd(false) }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-mist hover:text-chalk hover:bg-slate transition-colors">
+                <X size={16} />
+              </button>
             </div>
-            <form onSubmit={handleAdd} className="p-5 space-y-4">
-              {[{ label: 'Arena Name', key: 'name', placeholder: 'e.g. DHA Sports Complex' },
-                { label: 'Street Address', key: 'address', placeholder: 'Full address' }].map(({ label, key, placeholder }) => (
-                <div key={key}>
-                  <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">{label}</label>
-                  <input value={(form as any)[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body" placeholder={placeholder} />
-                </div>
-              ))}
+            {/* Scrollable body */}
+            <form onSubmit={handleAdd} className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-5">
+              <div>
+                <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">Arena Name</label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body" placeholder="e.g. DHA Sports Complex" />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">Area</label>
                   <input value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}
-                    className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body" placeholder="e.g. DHA" />
+                    className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body" placeholder="e.g. DHA Phase 5" />
                 </div>
                 <div>
                   <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">City</label>
-                  <select value={form.cityId} onChange={(e) => setForm({ ...form, cityId: e.target.value })}
-                    className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body">
-                    <option value="">Select city</option>
-                    {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <CustomDropdown options={cityNames} value={selectedCityName} onChange={handleCityChange} placeholder="Select city" />
                 </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">Street Address</label>
+                <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body" placeholder="Full address" />
               </div>
               <div>
                 <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">Pricing (PKR / hr)</label>
                 <div className="grid grid-cols-3 gap-3">
                   {(['weekdayPrice', 'weekendPrice', 'peakPrice'] as const).map((key, i) => (
                     <div key={key}>
-                      <p className="text-[10px] text-mist mb-1">{['Weekday', 'Weekend', 'Peak'][i]}</p>
-                      <input type="number" value={form[key]} onChange={(e) => setForm({ ...form, [key]: Number(e.target.value) })}
+                      <p className="text-[10px] text-mist font-mono mb-1.5">{['Weekday', 'Weekend', 'Peak'][i]}</p>
+                      <input type="number" min={0} value={form[key]} onChange={(e) => setForm({ ...form, [key]: Number(e.target.value) })}
                         className="w-full bg-slate text-chalk px-3 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body" />
                     </div>
                   ))}
@@ -447,10 +482,53 @@ function OwnerArenas() {
               <div>
                 <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">Description</label>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body resize-none" rows={3} placeholder="Short description" />
+                  className="w-full bg-slate text-chalk px-4 py-2.5 rounded-xl border border-line focus:outline-none focus:border-lime text-sm font-body resize-none" rows={3} placeholder="Facilities, sports, vibe…" />
               </div>
-              {addError && <p className="text-red-400 text-sm flex items-center gap-2"><AlertCircle size={14} />{addError}</p>}
-              <Btn type="submit" disabled={adding} className="w-full py-3">{adding ? 'Creating…' : 'Create Arena'}</Btn>
+              {/* Photo upload */}
+              <div>
+                <label className="text-[10px] font-mono text-mist uppercase tracking-[0.18em] block mb-1.5">Photos <span className="text-mist/50 normal-case tracking-normal">(up to 5)</span></label>
+                <input ref={newImageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []).slice(0, 5 - newImages.length)
+                  setNewImages((p) => [...p, ...files])
+                  setNewPreviews((p) => [...p, ...files.map((f) => URL.createObjectURL(f))])
+                  if (newImageInputRef.current) newImageInputRef.current.value = ''
+                }} />
+                {newPreviews.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {newPreviews.map((src, i) => (
+                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-slate">
+                        <img src={src} alt="" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => { URL.revokeObjectURL(newPreviews[i]); setNewImages((p) => p.filter((_, idx) => idx !== i)); setNewPreviews((p) => p.filter((_, idx) => idx !== i)) }}
+                          className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-red-500/80 transition-colors">
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ))}
+                    {newImages.length < 5 && (
+                      <button type="button" onClick={() => newImageInputRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-line flex flex-col items-center justify-center gap-1 text-mist hover:text-lime hover:border-lime/40 transition-colors">
+                        <Camera size={16} /><span className="text-[9px] font-mono">Add</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => newImageInputRef.current?.click()}
+                    className="w-full py-7 border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center gap-2 text-mist hover:text-chalk hover:border-lime/40 transition-colors group">
+                    <span className="w-10 h-10 rounded-full bg-slate flex items-center justify-center group-hover:bg-lime/10 transition-colors"><Camera size={18} /></span>
+                    <span className="text-sm">Add arena photos</span>
+                    <span className="text-xs font-mono text-mist/50">Up to 5 images</span>
+                  </button>
+                )}
+              </div>
+              {addError && (
+                <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <AlertCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
+                  <p className="text-sm text-red-400">{addError}</p>
+                </div>
+              )}
+              <Btn type="submit" disabled={adding} className="w-full py-3">
+                {adding ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-on-lime/30 border-t-on-lime rounded-full animate-spin" />Creating…</span> : 'Create Arena'}
+              </Btn>
             </form>
           </div>
         </div>
