@@ -119,7 +119,7 @@ export function OwnerBookings({ embedded = false }: { embedded?: boolean }) {
 
 
   const content = (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6 md:space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <section className="rounded-[28px] border border-line bg-gradient-to-br from-turf via-slate/70 to-ground p-5 md:p-8 noise-overlay overflow-hidden">
         <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-6 items-end">
           <div className="space-y-4">

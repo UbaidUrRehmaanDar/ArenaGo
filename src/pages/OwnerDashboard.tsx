@@ -112,6 +112,7 @@ function Card({ className, children }: { className?: string; children: React.Rea
 function OwnerOverview() {
   const { user } = useAuth()
   const { arenas } = useOwnerData()
+  const chart = useChartTheme()
   const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -133,91 +134,152 @@ function OwnerOverview() {
   const thisMonth = rev[rev.length - 1]?.revenue ?? 0
   const lastMonth = rev[rev.length - 2]?.revenue ?? 0
   const revChange = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : 0
+  const tooltipStyle = { background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, color: chart.tooltipText, borderRadius: '10px', padding: '8px 12px', fontSize: '12px' }
 
-  const stats = [
-    { label: 'This Month', value: formatPKR(thisMonth), icon: DollarSign,
-      trend: revChange !== 0 ? Math.abs(revChange) : undefined, trendDir: revChange >= 0 ? 'up' as const : 'down' as const },
-    { label: 'Total Revenue', value: formatPKR(analytics?.totalRevenue ?? 0), icon: TrendingUp },
-    { label: 'Total Bookings', value: analytics?.totalBookings ?? 0, icon: CalendarCheck },
-    { label: 'Avg Occupancy', value: `${Math.round((analytics?.averageOccupancy ?? 0) * 100)}%`, icon: BarChart2 },
-    { label: 'Active Arenas', value: arenas.length, icon: MapPin },
-    { label: 'Top Sport', value: analytics?.popularSports?.[0]?.sport ?? '—', icon: Star },
+  const kpis = [
+    { label: 'This Month Revenue', value: formatPKR(thisMonth), icon: DollarSign, accent: 'lime' as const,
+      sub: revChange !== 0 ? { val: `${revChange > 0 ? '+' : ''}${revChange}%`, up: revChange >= 0 } : null },
+    { label: 'Total Revenue', value: formatPKR(analytics?.totalRevenue ?? 0), icon: TrendingUp, accent: 'lime' as const, sub: null },
+    { label: 'Total Bookings', value: analytics?.totalBookings ?? 0, icon: CalendarCheck, accent: 'lime' as const, sub: null },
+    { label: 'Avg Occupancy', value: `${Math.round((analytics?.averageOccupancy ?? 0) * 100)}%`, icon: BarChart2, accent: 'amber' as const, sub: null },
   ]
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
-      {/* Greeting */}
-      <div className="rounded-2xl border border-lime/20 bg-lime/5 px-5 py-4 flex items-center justify-between gap-4">
+    <div className="space-y-6 md:space-y-7">
+
+      {/* ── Page header ──────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div>
-          <p className="font-mono text-[11px] text-lime uppercase tracking-[0.2em]">Welcome back</p>
-          <h1 className="font-display text-2xl md:text-3xl text-chalk mt-0.5">{user?.name ?? 'Owner'}</h1>
+          <p className="font-mono text-[11px] text-lime uppercase tracking-[0.22em] mb-1">
+            {format(new Date(), 'EEEE, d MMMM yyyy')}
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl text-chalk leading-tight">
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'},{' '}
+            <span className="text-lime">{(user?.name ?? 'Owner').split(' ')[0]}</span>
+          </h1>
         </div>
-        <Activity size={28} className="text-lime/40 shrink-0" />
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-mist px-3 py-1.5 rounded-full border border-line bg-slate/50">
+            {arenas.length} {arenas.length === 1 ? 'Arena' : 'Arenas'}
+          </span>
+          <Link to="/dashboard/owner/arenas"
+            className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-on-lime bg-lime hover:brightness-110 px-3 py-1.5 rounded-full transition-all">
+            <Plus size={11} />Manage
+          </Link>
+        </div>
       </div>
 
-      {/* Stat grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-        {stats.map(({ label, value, icon: Icon, trend, trendDir }) => (
-          <Card key={label} className="flex flex-col gap-3">
+      {/* ── KPI strip ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
+        {kpis.map(({ label, value, icon: Icon, accent, sub }) => (
+          <div key={label} className={cn(
+            'rounded-2xl border p-5 flex flex-col gap-3 relative overflow-hidden',
+            accent === 'lime' ? 'border-line bg-turf' : 'border-amber/20 bg-amber/5'
+          )}>
+            {/* faint watermark icon */}
+            <Icon size={52} className={cn('absolute -bottom-2 -right-2 opacity-[0.05]', accent === 'lime' ? 'text-lime' : 'text-amber')} />
             <div className="flex items-center justify-between">
-              <p className="text-xs font-mono text-mist uppercase tracking-widest">{label}</p>
-              <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-lime/10">
-                <Icon size={14} className="text-lime" />
+              <p className="text-[10px] font-mono text-mist uppercase tracking-widest leading-tight pr-8">{label}</p>
+              <span className={cn('w-8 h-8 flex items-center justify-center rounded-xl shrink-0',
+                accent === 'lime' ? 'bg-lime/10' : 'bg-amber/15')}>
+                <Icon size={14} className={accent === 'lime' ? 'text-lime' : 'text-amber'} />
               </span>
             </div>
-            <p className="font-display text-2xl md:text-3xl text-lime leading-none">{value}</p>
-            {trend !== undefined && (
-              <div className={cn('flex items-center gap-1 text-xs font-mono', trendDir === 'up' ? 'text-lime' : 'text-amber')}>
-                {trendDir === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {trend}% vs last month
+            <p className={cn('font-display text-2xl md:text-3xl leading-none', accent === 'lime' ? 'text-lime' : 'text-amber')}>{value}</p>
+            {sub && (
+              <div className={cn('flex items-center gap-1 text-[11px] font-mono', sub.up ? 'text-lime' : 'text-amber')}>
+                {sub.up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                {sub.val} vs last month
               </div>
             )}
-          </Card>
+          </div>
         ))}
       </div>
 
-      {/* Quick actions */}
-      <Card>
-        <p className="text-xs font-mono text-mist uppercase tracking-widest mb-4">Quick Actions</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { to: '/dashboard/owner/bookings',  label: 'View Bookings',   icon: CalendarCheck },
-            { to: '/dashboard/owner/arenas',    label: 'Manage Arenas',   icon: MapPin },
-            { to: '/dashboard/owner/slots',     label: 'Slot Manager',    icon: Clock },
-            { to: '/dashboard/owner/campaigns', label: 'Campaigns',       icon: Users },
-          ].map(({ to, label, icon: Icon }) => (
-            <Link key={to} to={to}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-line bg-slate hover:border-lime/30 hover:bg-lime/5 transition-colors group">
-              <Icon size={15} className="text-lime shrink-0" />
-              <span className="text-sm font-body text-chalk">{label}</span>
-              <ChevronRight size={13} className="ml-auto text-mist group-hover:text-lime transition-colors" />
-            </Link>
-          ))}
-        </div>
-      </Card>
+      {/* ── Main content grid ─────────────────────────────────────────── */}
+      <div className="grid lg:grid-cols-[1.6fr_1fr] gap-5">
 
-      {/* Arena occupancy snapshot */}
-      {arenas.length > 0 && (
+        {/* Revenue chart */}
         <Card>
-          <p className="text-xs font-mono text-mist uppercase tracking-widest mb-4">Arena Occupancy</p>
-          <div className="space-y-4">
-            {arenas.map((arena) => arena && (
-              <div key={arena.id} className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate shrink-0">
-                  <img src={arena.images[0]} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-body text-chalk truncate">{arena.name}</span>
-                    <span className="font-mono text-xs text-lime ml-3 shrink-0">{arena.occupancyRate}%</span>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-[10px] font-mono text-mist uppercase tracking-widest">Revenue Trend</p>
+              <p className="font-display text-xl text-chalk mt-0.5">Monthly Overview</p>
+            </div>
+            <span className="font-mono text-xs text-lime">{rev.length} months</span>
+          </div>
+          {rev.length > 0 ? (
+            <div className="h-[180px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={rev}>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => [formatPKR(Number(v)), 'Revenue']} />
+                  <Line type="monotone" dataKey="revenue" stroke={chart.lime} strokeWidth={2.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-[180px] flex items-center justify-center border border-dashed border-line rounded-xl">
+              <p className="text-mist text-sm font-mono">No revenue data yet</p>
+            </div>
+          )}
+        </Card>
+
+        {/* Arena occupancy */}
+        <Card>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-[10px] font-mono text-mist uppercase tracking-widest">Occupancy</p>
+              <p className="font-display text-xl text-chalk mt-0.5">By Arena</p>
+            </div>
+            <BarChart2 size={16} className="text-lime" />
+          </div>
+          {arenas.length > 0 ? (
+            <div className="space-y-4">
+              {arenas.map((arena) => arena && (
+                <div key={arena.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-body text-chalk truncate max-w-[75%]">{arena.name}</span>
+                    <span className="font-mono text-xs text-lime shrink-0 ml-2">{arena.occupancyRate}%</span>
                   </div>
                   <OccupancyBar percentage={arena.occupancyRate} />
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <MapPin size={20} className="text-mist" />
+              <p className="text-sm text-mist">No arenas added yet</p>
+              <Link to="/dashboard/owner/arenas" className="text-xs font-mono text-lime hover:underline">Add your first arena →</Link>
+            </div>
+          )}
         </Card>
-      )}
+      </div>
+
+      {/* ── Quick nav cards ───────────────────────────────────────────── */}
+      <div>
+        <p className="text-[10px] font-mono text-mist uppercase tracking-widest mb-3">Quick Access</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { to: '/dashboard/owner/bookings',  label: 'Bookings',      sub: 'Manage incoming', icon: CalendarCheck, color: 'lime' },
+            { to: '/dashboard/owner/arenas',    label: 'Arenas',        sub: 'Edit venues',      icon: MapPin,        color: 'lime' },
+            { to: '/dashboard/owner/slots',     label: 'Slot Manager',  sub: 'Block / open',    icon: Clock,         color: 'amber' },
+            { to: '/dashboard/owner/campaigns', label: 'Campaigns',     sub: 'Run promos',       icon: Users,         color: 'lime' },
+          ].map(({ to, label, sub, icon: Icon, color }) => (
+            <Link key={to} to={to}
+              className="group rounded-2xl border border-line bg-turf hover:border-lime/30 hover:bg-lime/5 p-4 flex flex-col gap-3 transition-all duration-200">
+              <span className={cn('w-9 h-9 flex items-center justify-center rounded-xl transition-colors',
+                color === 'lime' ? 'bg-lime/10 group-hover:bg-lime/20' : 'bg-amber/10 group-hover:bg-amber/20')}>
+                <Icon size={16} className={color === 'lime' ? 'text-lime' : 'text-amber'} />
+              </span>
+              <div>
+                <p className="font-body font-semibold text-chalk text-sm">{label}</p>
+                <p className="text-[11px] text-mist font-body">{sub}</p>
+              </div>
+              <ChevronRight size={13} className="text-mist/0 group-hover:text-lime transition-colors self-end" />
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
