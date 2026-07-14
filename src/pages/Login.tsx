@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { Btn, BtnLink } from '../components/ui/Btn'
+import { Btn } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { AuthSidebar } from '../components/layout/AuthSidebar'
@@ -18,6 +18,7 @@ export default function Login() {
     setIsErrorRed(true)
     setTimeout(() => setIsErrorRed(false), 2000)
   }
+
 
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -107,13 +108,9 @@ export default function Login() {
             </Btn>
           </form>
           
-          <div className="mt-6 flex justify-between items-center text-sm">
-            <div className="flex gap-2 text-mist font-body">
-              <span>Don't have an account?</span>
-              <BtnLink to="/signup" variant="outline" className="text-[14px] py-1 px-3">
-                Sign up
-              </BtnLink>
-            </div>
+          <div className="mt-6 flex justify-between items-center text-sm text-mist">
+            <span>Don't have an account?</span>
+            <Link to="/signup" className="text-lime hover:underline font-body">Sign up</Link>
           </div>
 
         </div>

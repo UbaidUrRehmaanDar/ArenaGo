@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, CreditCard, AlertCircle } from 'lucide-react'
-import { Btn, BtnLink } from '../components/ui/Btn'
+import { Btn } from '../components/ui/Btn'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { useAuth } from '../context/AuthContext'
 import { upsertOwnerRecord } from '../services/supabaseData'
@@ -179,9 +179,9 @@ export default function Signup() {
             </Btn>
           </form>
 
-          <div className="mt-6 flex justify-between items-center text-sm">
-            <span className="text-mist">Already have an account?</span>
-            <BtnLink to="/login" variant="outline" className="text-[14px] py-1 px-3">Log in</BtnLink>
+          <div className="mt-6 flex justify-between items-center text-sm text-mist">
+            <span>Already have an account?</span>
+            <Link to="/login" className="text-lime hover:underline font-body">Log in</Link>
           </div>
         </div>
       </div>
