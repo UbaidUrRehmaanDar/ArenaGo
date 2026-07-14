@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import {
-  CalendarClock, Megaphone, Tag, TrendingUp, AlertTriangle,
-  BarChart2, ExternalLink, Clock,
-} from 'lucide-react'
+import { Megaphone, Tag, TrendingUp, AlertTriangle, BarChart2, ExternalLink, Clock } from 'lucide-react'
 import { format, parseISO, differenceInDays } from 'date-fns'
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'

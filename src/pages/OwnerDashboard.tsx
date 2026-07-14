@@ -6,14 +6,13 @@ import {
 import {
   Camera, TrendingUp, TrendingDown, CalendarCheck, Users, DollarSign,
   BarChart2, MapPin, Clock, Plus, ChevronRight, AlertCircle, CheckCircle2,
-  XCircle, RefreshCw, Lock, Unlock, Star, Activity,
-  Mail, Phone, Pencil, KeyRound, X, RotateCw,
+  Mail, Pencil, KeyRound, X, RotateCw,
+  Lock as LockIcon, Unlock as UnlockIcon,
 } from 'lucide-react'
 import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
-import { format, isFuture, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
-import { StatCard } from '../components/ui/StatCard'
 import { OwnerBookings as OwnerBookingsPage } from './OwnerBookings'
 import { OwnerCampaigns } from './OwnerCampaigns'
 import { LoadingState } from '../components/ui/LoadingSpinner'
@@ -745,7 +744,7 @@ function SlotManager() {
                     busy && 'opacity-50 cursor-wait')}>
                   {noData ? <span className="text-mist text-xs font-mono">—</span> : (
                     <>
-                      {fullyBlocked ? <Lock size={14} /> : <Unlock size={14} />}
+                      {fullyBlocked ? <LockIcon size={14} /> : <UnlockIcon size={14} />}
                       <span className="text-[10px] font-mono leading-none">
                         {fullyBlocked ? 'BLOCKED' : `${stats.available}/${stats.openCount}`}
                       </span>
@@ -774,7 +773,7 @@ function SlotManager() {
 function OwnerProfile() {
   const { user, refreshUser } = useAuth()
   const [profile, setProfile] = useState<ProfileRecord | null>(null)
-  const [ownerRecord, setOwnerRecord] = useState<OwnerRecord | null>(null)
+  const [, setOwnerRecord] = useState<OwnerRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>()
   const [avatarUploading, setAvatarUploading] = useState(false)
