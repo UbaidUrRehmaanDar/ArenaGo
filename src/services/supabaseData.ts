@@ -487,7 +487,8 @@ export async function createArena(input: CreateArenaInput): Promise<{ arena: Are
       .select(`
         *,
         cities (name),
-        arena_images (url, alt_text, sort_order, is_primary)
+        arena_images (url, alt_text, sort_order, is_primary),
+        courts (sport_id, sports (name))
       `)
       .single()
 
@@ -522,11 +523,21 @@ function mapArenaRow(row: any): Arena {
   const rating = Number(row.average_rating ?? 0)
   const reviewCount = Number(row.review_count ?? 0)
 
+  // Resolve sport: from joined sports table, or from courts array, or fallback
+  let sport: string = 'Football'
+  if (row.sports?.name) {
+    sport = row.sports.name
+  } else if (Array.isArray(row.courts) && row.courts[0]?.sports?.name) {
+    sport = row.courts[0].sports.name
+  } else if (row.sport_name) {
+    sport = row.sport_name
+  }
+
   return {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    sport: 'Football', // Fallback as arenas table doesn't have sport directly
+    sport: sport as any,
     location: {
       city: row.cities?.name || 'Unknown',
       area: row.area || row.address || 'Unknown Area',
@@ -712,21 +723,19 @@ export async function fetchSlotsForArenaDate(arenaId: string, dateStr: string): 
         .eq('status', 'confirmed'),
       supabase
         .from('blocked_slots')
-        .select('slot_key')
+        .select('slot_id')
         .eq('arena_id', arenaId),
     ])
 
     if (slotsResult.error || !slotsResult.data) return []
 
-    // Build a set of slot IDs that are already booked in the bookings table
-    // This is the ground truth — the time_slots.status update can lag or be blocked by RLS
     const bookedSlotIds = new Set(
       (bookingsResult.data ?? []).map((b: any) => b.time_slot_id).filter(Boolean)
     )
 
     // Slots the owner has explicitly blocked via the Slot Manager
     const blockedSlotIds = new Set(
-      (blockedResult.data ?? []).map((b: any) => b.slot_key).filter(Boolean)
+      (blockedResult.data ?? []).map((b: any) => b.slot_id).filter(Boolean)
     )
 
     return slotsResult.data.map((row: any) => {
@@ -1046,53 +1055,42 @@ export async function fetchBlockedSlots(arenaId: string): Promise<string[]> {
   try {
     const { data, error } = await supabase
       .from('blocked_slots')
-      .select('slot_key')
+      .select('slot_id')
       .eq('arena_id', arenaId)
 
     if (error) {
+      // Table may not exist yet — return empty silently
       console.error('Error fetching blocked slots:', error)
       return []
     }
     if (!data) return []
-    return data.map((row: any) => row.slot_key)
+    return data.map((row: any) => row.slot_id)
   } catch (err) {
     console.error('Unexpected error fetching blocked slots:', err)
     return []
   }
 }
 
-export async function setBlockedSlot(arenaId: string, slotKey: string, blocked: boolean): Promise<boolean> {
+export async function setBlockedSlot(arenaId: string, slotId: string, blocked: boolean): Promise<boolean> {
   try {
     if (blocked) {
       const { error } = await supabase
         .from('blocked_slots')
-        .insert({ arena_id: arenaId, slot_key: slotKey })
-      if (error) {
+        .insert({ arena_id: arenaId, slot_id: slotId })
+      if (error && error.code !== '23505') { // 23505 = unique violation (already blocked)
         console.error('Error blocking slot:', error)
         return false
       }
-      // Reflect the block on the actual time slot row (only if still open)
-      await supabase
-        .from('time_slots')
-        .update({ status: 'unavailable' })
-        .eq('id', slotKey)
-        .eq('status', 'available')
     } else {
       const { error } = await supabase
         .from('blocked_slots')
         .delete()
         .eq('arena_id', arenaId)
-        .eq('slot_key', slotKey)
+        .eq('slot_id', slotId)
       if (error) {
         console.error('Error unblocking slot:', error)
         return false
       }
-      // Restore the time slot only if it was blocked (not booked)
-      await supabase
-        .from('time_slots')
-        .update({ status: 'available' })
-        .eq('id', slotKey)
-        .eq('status', 'unavailable')
     }
     return true
   } catch (err) {
@@ -1111,10 +1109,11 @@ export async function fetchTimeSlotsForArenaRange(
   endDate: string
 ): Promise<TimeSlot[]> {
   try {
+    // time_slots has no direct arena_id — must join through courts
     const { data, error } = await supabase
       .from('time_slots')
-      .select('id, arena_id, court_id, sport_id, date, start_time, end_time, price, is_peak, status')
-      .eq('arena_id', arenaId)
+      .select('*, courts!inner(arena_id, sport_id)')
+      .eq('courts.arena_id', arenaId)
       .gte('date', startDate)
       .lte('date', endDate)
 
@@ -1122,9 +1121,9 @@ export async function fetchTimeSlotsForArenaRange(
 
     return (data as any[]).map((row) => ({
       id: row.id,
-      arenaId: row.arena_id,
+      arenaId: arenaId,
       courtId: row.court_id,
-      sportId: row.sport_id,
+      sportId: row.courts?.sport_id ?? undefined,
       date: row.date,
       startTime: String(row.start_time).substring(0, 5),
       endTime: String(row.end_time).substring(0, 5),
