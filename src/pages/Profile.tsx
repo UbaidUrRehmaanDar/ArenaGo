@@ -8,6 +8,7 @@ import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { Btn, BtnLink } from '../components/ui/Btn'
+import { CustomDropdown } from '../components/ui/CustomDropdown'
 import { StatCard } from '../components/ui/StatCard'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -20,6 +21,8 @@ import {
   fetchProfileRecord,
   uploadAvatar,
   updateProfile,
+  upsertOwnerRecord,
+  fetchCities,
 } from '../services/supabaseData'
 import type { Arena, Booking, NotificationRecord, OwnerRecord, ProfileRecord } from '../types'
 import { cn, formatPKR } from '../utils/formatters'
@@ -76,10 +79,19 @@ export default function Profile() {
   // Edit profile panel
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
-  const [editCity, setEditCity] = useState('')
+  const [editCityId, setEditCityId] = useState('')
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([])
   const [editSaving, setEditSaving] = useState(false)
   const [editSuccess, setEditSuccess] = useState(false)
   const [editError, setEditError] = useState('')
+
+  // Business (owner-only) edit state
+  const [bizName, setBizName] = useState('')
+  const [bizEmail, setBizEmail] = useState('')
+  const [bizPhone, setBizPhone] = useState('')
+  const [bizSaving, setBizSaving] = useState(false)
+  const [bizSuccess, setBizSuccess] = useState(false)
+  const [bizError, setBizError] = useState('')
 
   // Change password
   const [currentPassword, setCurrentPassword] = useState('')
@@ -117,7 +129,8 @@ export default function Profile() {
       setAvatarUrl(profileData?.avatarUrl || currentUser.avatar)
       setEditName(profileData?.fullName || currentUser.name || '')
       setEditPhone(profileData?.phone || '')
-      setEditCity(profileData?.cityName || '')
+      setEditCityId(profileData?.cityId || '')
+      fetchCities().then(setCities)
       setLoading(false)
     }
 
@@ -126,7 +139,39 @@ export default function Profile() {
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [user?.id])
+
+  // Sync business fields once the owner record loads
+  useEffect(() => {
+    if (ownerRecord) {
+      setBizName(ownerRecord.businessName || '')
+      setBizEmail(ownerRecord.businessEmail || '')
+      setBizPhone(ownerRecord.businessPhone || '')
+    }
+  }, [ownerRecord])
+
+  const handleBizSave = async () => {
+    if (!user) return
+    if (!bizName.trim()) {
+      setBizError('Business name is required.')
+      return
+    }
+    setBizError('')
+    setBizSaving(true)
+    const result = await upsertOwnerRecord(user.id, {
+      businessName: bizName.trim(),
+      businessEmail: bizEmail.trim() || undefined,
+      businessPhone: bizPhone.trim() || undefined,
+    })
+    if (result) {
+      setOwnerRecord(result)
+      setBizSuccess(true)
+      setTimeout(() => setBizSuccess(false), 2000)
+    } else {
+      setBizError('Could not save business details. Please try again.')
+    }
+    setBizSaving(false)
+  }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -164,30 +209,30 @@ export default function Profile() {
   const handleEditSave = async () => {
     if (!user) return
 
-    // Basic validation
-    if (editCity.trim() && editCity.trim().length < 2) {
-      setEditError('City name must be at least 2 characters.')
-      return
-    }
-
     setEditSaving(true)
+    setEditError('')
     const ok = await updateProfile(user.id, {
       fullName: editName.trim() || undefined,
       phone: editPhone.trim() || undefined,
+      cityId: editCityId || null,
     })
     if (ok) {
+      const selectedCity = cities.find((c) => c.id === editCityId)
       setProfile((prev) =>
         prev
           ? {
               ...prev,
               fullName: editName.trim() || prev.fullName,
               phone: editPhone.trim() || prev.phone,
-              cityId: editCity.trim() || prev.cityId,
+              cityId: editCityId || prev.cityId,
+              cityName: selectedCity?.name ?? prev.cityName,
             }
           : prev
       )
       setEditSuccess(true)
       setTimeout(() => setEditSuccess(false), 2000)
+    } else {
+      setEditError('Failed to save changes. Please try again.')
     }
     setEditSaving(false)
   }
@@ -402,13 +447,13 @@ export default function Profile() {
                 </div>
                 <div>
                   <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">City</label>
-                  <input
-                    type="text"
-                    value={editCity}
-                    onChange={(e) => setEditCity(e.target.value)}
-                    autoComplete="address-level2"
-                    className="w-full bg-slate text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
-                    placeholder="e.g. Lahore"
+                  <CustomDropdown
+                    options={cities.map((c) => c.name)}
+                    value={cities.find((c) => c.id === editCityId)?.name || ''}
+                    onChange={(name) =>
+                      setEditCityId(cities.find((c) => c.name === name)?.id || '')
+                    }
+                    placeholder="Select your city"
                   />
                 </div>
                 <div>
@@ -435,12 +480,55 @@ export default function Profile() {
                     {editSaving ? 'Saving…' : editSuccess ? 'Saved ✓' : 'Save Changes'}
                   </Btn>
                 </div>
-                {user.role === 'owner' && ownerRecord && (
-                  <div className="rounded-xl border border-line bg-slate p-4 mt-2">
-                    <p className="text-xs font-mono uppercase tracking-[0.18em] text-mist">Business</p>
-                    <p className="mt-2 text-chalk text-sm">{ownerRecord.businessName}</p>
-                    <p className="text-mist text-xs mt-1">{ownerRecord.businessEmail || 'No business email'}</p>
-                    <p className="text-mist text-xs">{ownerRecord.businessPhone || 'No business phone'}</p>
+                {user.role === 'owner' && (
+                  <div className="rounded-xl border border-line bg-slate p-4 mt-2 space-y-4">
+                    <p className="text-xs font-mono uppercase tracking-[0.18em] text-mist">
+                      Business Details
+                      {ownerRecord?.status && (
+                        <span className="ml-2 normal-case tracking-normal text-mist/60">
+                          ({ownerRecord.status})
+                        </span>
+                      )}
+                    </p>
+                    <div>
+                      <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">Business Name</label>
+                      <input
+                        type="text"
+                        value={bizName}
+                        onChange={(e) => setBizName(e.target.value)}
+                        className="w-full bg-ground text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                        placeholder="Your arena business"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">Business Email</label>
+                      <input
+                        type="email"
+                        value={bizEmail}
+                        onChange={(e) => setBizEmail(e.target.value)}
+                        className="w-full bg-ground text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                        placeholder="billing@business.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-mono uppercase tracking-[0.18em] text-mist block mb-2">Business Phone</label>
+                      <input
+                        type="tel"
+                        value={bizPhone}
+                        onChange={(e) => setBizPhone(e.target.value)}
+                        className="w-full bg-ground text-chalk px-4 py-3 rounded-xl border border-line focus:outline-none focus:border-lime font-body text-sm"
+                        placeholder="+92 300 0000000"
+                      />
+                    </div>
+                    {bizError && <p className="text-booked text-sm">{bizError}</p>}
+                    <Btn
+                      type="button"
+                      onClick={handleBizSave}
+                      disabled={bizSaving}
+                      className={cn('w-full py-3', bizSuccess && 'bg-lime/30 text-lime')}
+                    >
+                      {bizSaving ? 'Saving…' : bizSuccess ? 'Saved ✓' : 'Save Business Details'}
+                    </Btn>
                   </div>
                 )}
               </div>

@@ -35,7 +35,7 @@ export default function Notifications() {
       setNotifications(data)
       setLoading(false)
     })
-  }, [user])
+  }, [user?.id])
 
   const unread = notifications.filter((n) => !n.isRead)
 

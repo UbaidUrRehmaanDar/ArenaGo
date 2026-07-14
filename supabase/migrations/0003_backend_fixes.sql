@@ -220,3 +220,37 @@ CREATE POLICY "Owners can delete their arena images storage"
     bucket_id = 'arena-images'
     AND auth.role() = 'authenticated'
   );
+
+-- ── 7. BOOKINGS RLS ───────────────────────────────────────────
+-- Without these, authenticated users get empty arrays back from bookings queries
+
+DROP POLICY IF EXISTS "Players can view their own bookings"  ON bookings;
+DROP POLICY IF EXISTS "Owners can view bookings for their arenas" ON bookings;
+DROP POLICY IF EXISTS "Players can insert their own bookings" ON bookings;
+DROP POLICY IF EXISTS "Players can update their own bookings" ON bookings;
+
+-- Players see their own bookings
+CREATE POLICY "Players can view their own bookings"
+  ON bookings FOR SELECT
+  USING (auth.uid() = customer_id);
+
+-- Owners see bookings for their arenas
+CREATE POLICY "Owners can view bookings for their arenas"
+  ON bookings FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM arenas
+      WHERE arenas.id = bookings.arena_id
+        AND arenas.owner_id = auth.uid()
+    )
+  );
+
+-- Authenticated users can insert bookings (booking flow)
+CREATE POLICY "Players can insert their own bookings"
+  ON bookings FOR INSERT
+  WITH CHECK (auth.uid() = customer_id);
+
+-- Players can update (cancel) their own bookings
+CREATE POLICY "Players can update their own bookings"
+  ON bookings FOR UPDATE
+  USING (auth.uid() = customer_id);

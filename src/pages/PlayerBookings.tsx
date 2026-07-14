@@ -40,7 +40,7 @@ export default function PlayerBookings() {
 
   useEffect(() => {
     loadData()
-  }, [user])
+  }, [user?.id])
 
   const arenaMap = useMemo(() => new Map(arenas.map((arena) => [arena.id, arena])), [arenas])
 

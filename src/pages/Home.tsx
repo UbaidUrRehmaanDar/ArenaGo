@@ -47,7 +47,7 @@ export default function Home() {
       setLoading(false)
     }
     loadData()
-  }, [user])
+  }, [user?.id])
 
   useLayoutEffect(() => {
     if (!rootRef.current) return

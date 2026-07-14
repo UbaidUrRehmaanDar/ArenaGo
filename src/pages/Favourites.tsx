@@ -22,7 +22,7 @@ export default function Favourites() {
       setFavourites(data)
       setLoading(false)
     })
-  }, [user])
+  }, [user?.id])
 
   if (!user) return <Navigate to="/login" replace />
   if (loading) return <LoadingState message="Loading your favourites..." />

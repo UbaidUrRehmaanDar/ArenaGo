@@ -60,7 +60,7 @@ export function OwnerBookings({ embedded = false }: { embedded?: boolean }) {
 
   useEffect(() => {
     loadData()
-  }, [user])
+  }, [user?.id])
 
   const arenaMap = useMemo(() => new Map(arenas.map((arena) => [arena.id, arena])), [arenas])
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles])

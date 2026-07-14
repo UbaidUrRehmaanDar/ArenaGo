@@ -54,7 +54,7 @@ export function OwnerCampaigns({ embedded = false }: { embedded?: boolean }) {
       setLoading(false)
     }
     load()
-  }, [user])
+  }, [user?.id])
 
   const stats = useMemo(() => ({
     total: promotions.length,

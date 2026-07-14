@@ -40,7 +40,7 @@ export function HomeTab() {
       setLoading(false)
     }
     loadData()
-  }, [user])
+  }, [user?.id])
 
   const featuredArenas = useMemo(() => allArenas.filter((a) => a.isFeatured).slice(0, 4), [allArenas])
   const trendingArenas = useMemo(

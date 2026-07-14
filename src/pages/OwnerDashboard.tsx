@@ -80,7 +80,7 @@ function useOwnerData() {
       setArenas(loaded); setLoading(false)
     }
     load()
-  }, [user])
+  }, [user?.id])
   return { user, arenas, loading }
 }
 
@@ -126,7 +126,7 @@ function OwnerOverview() {
       setAnalytics(data); setLoading(false)
     }
     load()
-  }, [user])
+  }, [user?.id])
 
   if (loading) return <LoadingState message="Loading overview..." />
 
@@ -320,7 +320,7 @@ function OwnerArenas() {
     setArenas(loaded); setLoading(false)
   }
 
-  useEffect(() => { load(); fetchCities().then(setCities) }, [user])
+  useEffect(() => { load(); fetchCities().then(setCities) }, [user?.id])
 
   const handleImageChange = async (arenaId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
@@ -549,7 +549,7 @@ function OwnerAnalytics() {
   useEffect(() => {
     if (!user?.arenaIds?.length) { setLoading(false); return }
     fetchOwnerAnalytics(user.arenaIds).then((d) => { setData(d); setLoading(false) })
-  }, [user])
+  }, [user?.id])
 
   if (loading) return <LoadingState message="Loading analytics..." />
 
@@ -803,7 +803,7 @@ function OwnerProfile() {
       setBizName(o?.businessName ?? ''); setBizEmail(o?.businessEmail ?? ''); setBizPhone(o?.businessPhone ?? '')
       setLoading(false)
     })
-  }, [user])
+  }, [user?.id])
 
   const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return
