@@ -72,7 +72,7 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
 
       {/* ── Mobile header ────────────────────────────────────────────── */}
       <header className="md:hidden sticky top-0 z-40 bg-turf border-b border-line px-4 h-14 flex items-center justify-between">
-        <Link to="/">
+        <Link to={role === 'owner' ? '/dashboard/owner' : '/dashboard/player'}>
           <ArenaGoLogo iconSize="h-8 w-8" textSize="text-lg" />
         </Link>
         <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export function DashboardLayout({ role, links }: DashboardLayoutProps) {
 
         {/* Logo + theme */}
         <div className="px-5 py-5 border-b border-line flex items-center justify-between gap-3">
-          <Link to="/">
+          <Link to={role === 'owner' ? '/dashboard/owner' : '/dashboard/player'}>
             <ArenaGoLogo iconSize="h-9 w-9" textSize="text-xl" />
           </Link>
           <ThemeToggle />
